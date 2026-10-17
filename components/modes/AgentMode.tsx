@@ -70,17 +70,17 @@ function describeResearchStatus(event: ResearchStreamEvent): string {
 // Shared ReactMarkdown renderers for the report and summary cards.
 const markdownComponents = {
   h1: (props: React.ComponentProps<"h1">) => (
-    <h1 className="mb-2 mt-4 text-base font-bold text-neutral-100 first:mt-0" {...props} />
+    <h1 className="mb-2 mt-4 text-base font-bold text-fg first:mt-0" {...props} />
   ),
   h2: (props: React.ComponentProps<"h2">) => (
-    <h2 className="mb-2 mt-4 text-base font-bold text-neutral-100 first:mt-0" {...props} />
+    <h2 className="mb-2 mt-4 text-base font-bold text-fg first:mt-0" {...props} />
   ),
   h3: (props: React.ComponentProps<"h3">) => (
-    <h3 className="mb-1.5 mt-3 text-sm font-bold text-neutral-100 first:mt-0" {...props} />
+    <h3 className="mb-1.5 mt-3 text-sm font-bold text-fg first:mt-0" {...props} />
   ),
   p: (props: React.ComponentProps<"p">) => <p className="mb-3 last:mb-0" {...props} />,
   strong: (props: React.ComponentProps<"strong">) => (
-    <strong className="font-semibold text-neutral-100" {...props} />
+    <strong className="font-semibold text-fg" {...props} />
   ),
   ul: (props: React.ComponentProps<"ul">) => (
     <ul className="mb-3 list-disc space-y-1 pl-5" {...props} />
@@ -94,18 +94,18 @@ const markdownComponents = {
       {...props}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-sky-400 underline underline-offset-2"
+      className="text-sky-label underline underline-offset-2"
     />
   ),
   blockquote: (props: React.ComponentProps<"blockquote">) => (
-    <blockquote className="mb-3 border-l-2 border-neutral-700 pl-3 text-neutral-400" {...props} />
+    <blockquote className="mb-3 border-l-2 border-line-strong pl-3 text-muted" {...props} />
   ),
   code: (props: React.ComponentProps<"code">) => (
-    <code className="break-words rounded bg-neutral-800 px-1 py-0.5 text-xs" {...props} />
+    <code className="break-words rounded bg-card-hi px-1 py-0.5 text-xs" {...props} />
   ),
   pre: (props: React.ComponentProps<"pre">) => (
     <pre
-      className="mb-3 overflow-x-auto rounded-lg bg-neutral-800 p-3 text-xs [&>code]:bg-transparent [&>code]:p-0"
+      className="mb-3 overflow-x-auto rounded-lg bg-card-hi p-3 text-xs [&>code]:bg-transparent [&>code]:p-0"
       {...props}
     />
   ),
@@ -116,14 +116,14 @@ const markdownComponents = {
   ),
   th: (props: React.ComponentProps<"th">) => (
     <th
-      className="border border-neutral-700 px-2 py-1 text-left font-semibold text-neutral-100"
+      className="border border-line-strong px-2 py-1 text-left font-semibold text-fg"
       {...props}
     />
   ),
   td: (props: React.ComponentProps<"td">) => (
-    <td className="border border-neutral-800 px-2 py-1 align-top" {...props} />
+    <td className="border border-line px-2 py-1 align-top" {...props} />
   ),
-  hr: () => <hr className="my-4 border-neutral-800" />,
+  hr: () => <hr className="my-4 border-line" />,
 };
 
 export function AgentMode({
@@ -252,7 +252,7 @@ export function AgentMode({
               placeholder="調査したいテーマを自由に入力してください（日本語でも英訳して検索します）"
               maxLength={MAX_QUERY_CHARS}
               rows={3}
-              className="w-full resize-none rounded-xl border border-neutral-700 bg-neutral-900 px-4 py-3 text-base outline-none focus:border-neutral-500"
+              className="w-full resize-none rounded-xl border border-line-strong bg-card px-4 py-3 text-base outline-none focus:border-neutral-500"
             />
             <div>
               <div className="mb-1 text-xs text-neutral-500">調査レベル(effort)・1回の料金</div>
@@ -264,8 +264,8 @@ export function AgentMode({
                     onClick={() => setEffort(opt.id)}
                     className={`rounded-lg border px-1 py-1.5 text-xs font-medium leading-tight ${
                       effort === opt.id
-                        ? "border-sky-500 bg-sky-950/60 text-sky-200"
-                        : "border-neutral-700 text-neutral-400"
+                        ? "border-sky-500 bg-sky-sel text-sky-on"
+                        : "border-line-strong text-muted"
                     }`}
                   >
                     {opt.label}
@@ -278,7 +278,7 @@ export function AgentMode({
             <button
               type="submit"
               disabled={loading || !queryInput.trim()}
-              className="w-full rounded-xl bg-neutral-100 px-4 py-3 text-sm font-semibold text-neutral-950 active:opacity-80 disabled:opacity-40"
+              className="w-full rounded-xl bg-fg px-4 py-3 text-sm font-semibold text-page active:opacity-80 disabled:opacity-40"
             >
               {loading ? "調査中…" : "調査開始"}
             </button>
@@ -295,11 +295,11 @@ export function AgentMode({
           {result && <NoticeBanner messages={result.notices} />}
 
           {result?.summary && (
-            <section className="mt-6 rounded-xl border border-emerald-900 bg-emerald-950/40 p-4">
-              <h2 className="mb-2 text-xs font-semibold text-emerald-400">
+            <section className="mt-6 rounded-xl border border-emerald-edge bg-emerald-panel p-4">
+              <h2 className="mb-2 text-xs font-semibold text-emerald-label">
                 {queryLabel ? `「${queryLabel}」の要約` : "要約"}
               </h2>
-              <div className="report-markdown text-sm leading-relaxed text-neutral-200">
+              <div className="report-markdown text-sm leading-relaxed text-fg-soft">
                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
                   {result.summary}
                 </ReactMarkdown>
@@ -327,7 +327,7 @@ export function AgentMode({
               idleLabel="レポート読み上げ"
               playLabel="▶ レポートを読み上げる"
               beforeControls={
-                <label className="mb-3 flex items-center gap-2 text-xs text-neutral-400">
+                <label className="mb-3 flex items-center gap-2 text-xs text-muted">
                   <input
                     type="checkbox"
                     checked={readFullText}
@@ -335,7 +335,7 @@ export function AgentMode({
                       if (broadcast.isSpeaking) broadcast.stop();
                       setReadFullText(e.target.checked);
                     }}
-                    className="h-4 w-4 rounded border-neutral-700 bg-neutral-900 accent-red-500"
+                    className="h-4 w-4 rounded border-line-strong bg-card accent-red-500"
                   />
                   全文を読み上げる（既定では要約のみ）
                 </label>
@@ -360,14 +360,14 @@ export function AgentMode({
       }
     >
       {result && (
-        <section className="mt-6 rounded-xl border border-sky-900 bg-sky-950/40 p-4">
-          <h2 className="mb-1 text-xs font-semibold text-sky-400">
+        <section className="mt-6 rounded-xl border border-sky-edge bg-sky-panel p-4">
+          <h2 className="mb-1 text-xs font-semibold text-sky-label">
             {queryLabel ? `「${queryLabel}」の調査結果` : "調査結果"}
           </h2>
           <p className="mb-2 text-[11px] text-neutral-500">
             Exa Agent ・ 調査レベル {resultEffortLabel}({result.effort})
           </p>
-          <div className="report-markdown text-sm leading-relaxed text-neutral-200">
+          <div className="report-markdown text-sm leading-relaxed text-fg-soft">
             <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
               {result.text}
             </ReactMarkdown>
@@ -394,7 +394,7 @@ export function AgentMode({
                   href={citation.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block rounded-xl border border-neutral-800 bg-neutral-900 p-4 active:bg-neutral-800"
+                  className="block rounded-xl border border-line bg-card p-4 active:bg-card-hi"
                 >
                   <h3 className="mb-1 text-sm font-semibold leading-snug">
                     {citation.title ?? citation.url}

@@ -4,7 +4,7 @@ import { formatElapsed } from "@/lib/format-elapsed";
 
 export function ErrorBanner({ message }: { message: string }) {
   return (
-    <p className="mt-4 rounded-lg border border-red-900 bg-red-950/50 px-4 py-3 text-sm text-red-300">
+    <p className="mt-4 rounded-lg border border-red-edge bg-red-panel px-4 py-3 text-sm text-red-text">
       {message}
     </p>
   );
@@ -14,7 +14,7 @@ export function ErrorBanner({ message }: { message: string }) {
 export function NoticeBanner({ messages }: { messages: string[] }) {
   if (messages.length === 0) return null;
   return (
-    <div className="mt-4 space-y-1 rounded-lg border border-amber-900 bg-amber-950/40 px-4 py-3 text-xs text-amber-200">
+    <div className="mt-4 space-y-1 rounded-lg border border-amber-edge bg-amber-panel px-4 py-3 text-xs text-amber-text">
       {messages.map((message) => (
         <p key={message}>{message}</p>
       ))}
@@ -42,7 +42,7 @@ export function CostLine({
 export function ScopeNote({ children }: { children: React.ReactNode }) {
   return (
     <aside className="mt-4">
-      <details className="rounded-lg border border-neutral-800 px-3 py-2 text-xs text-neutral-500">
+      <details className="rounded-lg border border-line px-3 py-2 text-xs text-neutral-500">
         <summary className="cursor-pointer select-none">
           ※ Exaで選べる機能をすべて網羅してはいません
         </summary>

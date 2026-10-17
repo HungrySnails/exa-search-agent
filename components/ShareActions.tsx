@@ -116,7 +116,7 @@ export function ShareActions({
   }
 
   const buttonClass =
-    "rounded-lg border border-neutral-700 px-3 py-1.5 text-xs font-medium text-neutral-300 active:opacity-80";
+    "rounded-lg border border-line-strong px-3 py-1.5 text-xs font-medium text-fg-soft active:opacity-80";
   return (
     <div className="mt-3 flex items-center justify-end gap-2">
       {notice && <span className="text-[11px] text-neutral-500">{notice}</span>}

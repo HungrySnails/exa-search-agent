@@ -39,17 +39,17 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-neutral-100">
+    <main className="min-h-screen bg-page text-fg">
       <div className="mx-auto w-full max-w-md px-4 pb-24 pt-8 md:max-w-3xl md:px-8 2xl:max-w-[1600px] 2xl:px-12">
-        <div className="mb-6 flex gap-1 rounded-xl border border-neutral-800 bg-neutral-900 p-1">
+        <div className="mb-6 flex gap-1 rounded-xl border border-line bg-card p-1">
           {MODE_OPTIONS.map((opt) => (
             <button
               key={opt.id}
               onClick={() => setMode(opt.id)}
               className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold ${
                 mode === opt.id
-                  ? "bg-neutral-100 text-neutral-950"
-                  : "text-neutral-400"
+                  ? "bg-fg text-page"
+                  : "text-muted"
               }`}
             >
               {opt.label}

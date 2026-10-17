@@ -1,26 +1,113 @@
 @import "tailwindcss";
 
+/*
+ * Colour roles. Components use these names (bg-card, text-muted,
+ * border-sky-edge, ...) instead of fixed palette steps, so light and dark
+ * follow the system setting and a palette change happens only here.
+ * Values below are light; the dark set follows in the media query.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  color-scheme: light dark;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Neutrals: page, raised surface, pressed/code surface, borders, text. */
+  --page: #fafafa;
+  --card: #ffffff;
+  --card-hi: #f5f5f5;
+  --line: #e5e5e5;
+  --line-strong: #d4d4d4;
+  --fg: #171717;
+  --fg-soft: #404040;
+  --muted: #525252;
+  --disabled: #a3a3a3;
+
+  /* Tinted panels: panel (background), edge (border), label/on/text (type),
+     sel (selected-button background). */
+  --sky-panel: #f0f9ff;
+  --sky-edge: #bae6fd;
+  --sky-label: #0369a1;
+  --sky-sel: #e0f2fe;
+  --sky-on: #075985;
+  --emerald-panel: #ecfdf5;
+  --emerald-edge: #a7f3d0;
+  --emerald-label: #047857;
+  --amber-panel: #fffbeb;
+  --amber-edge: #fde68a;
+  --amber-text: #92400e;
+  --red-panel: #fef2f2;
+  --red-edge: #fecaca;
+  --red-text: #b91c1c;
+  --red-label: #dc2626;
+  --red-sel: #fee2e2;
+  --red-on: #991b1b;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --page: #0a0a0a;
+    --card: #171717;
+    --card-hi: #262626;
+    --line: #262626;
+    --line-strong: #404040;
+    --fg: #f5f5f5;
+    --fg-soft: #d4d4d4;
+    --muted: #a3a3a3;
+    --disabled: #525252;
+
+    --sky-panel: #082f4966;
+    --sky-edge: #024a70;
+    --sky-label: #38bdf8;
+    --sky-sel: #082f4999;
+    --sky-on: #bae6fd;
+    --emerald-panel: #022c2266;
+    --emerald-edge: #065f46;
+    --emerald-label: #34d399;
+    --amber-panel: #451a0366;
+    --amber-edge: #78350f;
+    --amber-text: #fde68a;
+    --red-panel: #450a0a80;
+    --red-edge: #7f1d1d;
+    --red-text: #fca5a5;
+    --red-label: #f87171;
+    --red-sel: #450a0a99;
+    --red-on: #fecaca;
   }
 }
 
+@theme inline {
+  --color-page: var(--page);
+  --color-card: var(--card);
+  --color-card-hi: var(--card-hi);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-fg: var(--fg);
+  --color-fg-soft: var(--fg-soft);
+  --color-muted: var(--muted);
+  --color-disabled: var(--disabled);
+
+  --color-sky-panel: var(--sky-panel);
+  --color-sky-edge: var(--sky-edge);
+  --color-sky-label: var(--sky-label);
+  --color-sky-sel: var(--sky-sel);
+  --color-sky-on: var(--sky-on);
+  --color-emerald-panel: var(--emerald-panel);
+  --color-emerald-edge: var(--emerald-edge);
+  --color-emerald-label: var(--emerald-label);
+  --color-amber-panel: var(--amber-panel);
+  --color-amber-edge: var(--amber-edge);
+  --color-amber-text: var(--amber-text);
+  --color-red-panel: var(--red-panel);
+  --color-red-edge: var(--red-edge);
+  --color-red-text: var(--red-text);
+  --color-red-label: var(--red-label);
+  --color-red-sel: var(--red-sel);
+  --color-red-on: var(--red-on);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--page);
+  color: var(--fg);
   font-family: Arial, Helvetica, sans-serif;
 }

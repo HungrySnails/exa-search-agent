@@ -47,7 +47,7 @@ export function BroadcastPanel({
   afterControls,
 }: BroadcastPanelProps) {
   return (
-    <aside aria-label="読み上げ" className="mt-4 rounded-xl border border-red-900 bg-neutral-900 p-4">
+    <aside aria-label="読み上げ" className="mt-4 rounded-xl border border-red-edge bg-card p-4">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span
@@ -83,8 +83,8 @@ export function BroadcastPanel({
             onClick={() => onEngineChange(opt.id)}
             className={`flex-1 rounded-lg border px-2 py-1.5 text-xs font-medium ${
               ttsEngine === opt.id
-                ? "border-red-500 bg-red-950/60 text-red-200"
-                : "border-neutral-700 text-neutral-400"
+                ? "border-red-500 bg-red-sel text-red-on"
+                : "border-line-strong text-muted"
             }`}
           >
             {opt.label}
@@ -118,7 +118,7 @@ export function BroadcastPanel({
           {isSpeaking && (
             <button
               onClick={onStop}
-              className="rounded-lg border border-neutral-700 px-4 py-3 text-sm font-semibold text-neutral-300 active:opacity-80"
+              className="rounded-lg border border-line-strong px-4 py-3 text-sm font-semibold text-fg-soft active:opacity-80"
             >
               ■ 停止
             </button>
@@ -134,7 +134,7 @@ export function BroadcastPanel({
         </p>
       )}
 
-      {ttsError && <p className="mt-2 text-xs text-red-400">{ttsError}</p>}
+      {ttsError && <p className="mt-2 text-xs text-red-label">{ttsError}</p>}
 
       {afterControls}
     </aside>

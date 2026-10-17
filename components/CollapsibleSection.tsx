@@ -28,7 +28,7 @@ export function CollapsibleSection({
       <button
         type="button"
         onClick={onToggle}
-        className={`${toggleClassName} flex w-full items-center justify-between rounded-xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-sm font-medium text-neutral-300 active:bg-neutral-800 ${
+        className={`${toggleClassName} flex w-full items-center justify-between rounded-xl border border-line bg-card px-4 py-3 text-sm font-medium text-fg-soft active:bg-card-hi ${
           forceOpenAtDesktop ? "2xl:hidden" : ""
         }`}
       >

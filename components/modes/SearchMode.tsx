@@ -33,7 +33,7 @@ type NewsItem = {
 const MAX_QUERY_CHARS = 200;
 
 const FIELD_CLASS =
-  "w-full rounded-lg border border-neutral-700 bg-neutral-900 px-2 py-2 text-sm text-neutral-100 outline-none [color-scheme:dark] focus:border-neutral-500 disabled:opacity-40";
+  "w-full rounded-lg border border-line-strong bg-card px-2 py-2 text-sm text-fg outline-none focus:border-neutral-500 disabled:opacity-40";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -206,7 +206,7 @@ export function SearchMode({
               placeholder="調査したいテーマを自由に入力してください（日本語でも英訳して検索します）"
               maxLength={MAX_QUERY_CHARS}
               rows={2}
-              className="w-full resize-none rounded-xl border border-neutral-700 bg-neutral-900 px-4 py-3 text-base outline-none focus:border-neutral-500"
+              className="w-full resize-none rounded-xl border border-line-strong bg-card px-4 py-3 text-base outline-none focus:border-neutral-500"
             />
             <div className="grid grid-cols-2 gap-2">
               <Field label="検索タイプ(type)">
@@ -247,7 +247,7 @@ export function SearchMode({
               onToggle={() => setOptionsOpen((open) => !open)}
               toggleClassName="mt-1"
             >
-              <div className="space-y-3 rounded-xl border border-neutral-800 p-3">
+              <div className="space-y-3 rounded-xl border border-line p-3">
                 <div className="grid grid-cols-2 gap-2">
                   <Field label="件数(numResults)">
                     <input
@@ -337,7 +337,7 @@ export function SearchMode({
                     ))}
                   </select>
                 </Field>
-                <label className="flex items-center gap-2 text-xs text-neutral-400">
+                <label className="flex items-center gap-2 text-xs text-muted">
                   <input
                     type="checkbox"
                     checked={moderation}
@@ -352,7 +352,7 @@ export function SearchMode({
             <button
               type="submit"
               disabled={loading || !query.trim()}
-              className="w-full rounded-xl border border-neutral-700 px-4 py-3 text-sm font-semibold text-neutral-100 active:opacity-80 disabled:opacity-40"
+              className="w-full rounded-xl border border-line-strong px-4 py-3 text-sm font-semibold text-fg active:opacity-80 disabled:opacity-40"
             >
               {loading ? "検索中…" : "検索"}
             </button>
@@ -362,12 +362,12 @@ export function SearchMode({
           <NoticeBanner messages={notices} />
 
           {overview && (
-            <section className="mt-6 rounded-xl border border-sky-900 bg-sky-950/40 p-4">
-              <h2 className="mb-1 text-xs font-semibold text-sky-400">
+            <section className="mt-6 rounded-xl border border-sky-edge bg-sky-panel p-4">
+              <h2 className="mb-1 text-xs font-semibold text-sky-label">
                 {searchLabel ? `「${searchLabel}」の総括` : "総括"}
               </h2>
               {run && <p className="mb-2 text-[11px] text-neutral-500">{run.info}</p>}
-              <p className="text-sm leading-relaxed text-neutral-200">{overview}</p>
+              <p className="text-sm leading-relaxed text-fg-soft">{overview}</p>
               <CostLine dollars={costDollars} elapsedMs={elapsedMs} />
               <ShareActions heading={searchLabel ? `「${searchLabel}」の総括` : "総括"} body={overview} />
             </section>
@@ -391,7 +391,7 @@ export function SearchMode({
               afterControls={
                 <label
                   className={`mt-3 flex items-center gap-2 text-xs ${
-                    items.length === 0 ? "text-neutral-600" : "text-neutral-300"
+                    items.length === 0 ? "text-disabled" : "text-fg-soft"
                   }`}
                 >
                   <input
@@ -445,7 +445,7 @@ export function SearchMode({
                   href={item.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block rounded-xl border border-neutral-800 bg-neutral-900 p-4 active:bg-neutral-800"
+                  className="block rounded-xl border border-line bg-card p-4 active:bg-card-hi"
                 >
                   <div className="mb-1 flex items-center justify-between text-xs text-neutral-500">
                     <span>{item.source}</span>
@@ -462,7 +462,7 @@ export function SearchMode({
                     )}
                   </div>
                   <h3 className="mb-2 text-base font-semibold leading-snug">{item.title}</h3>
-                  <p className="text-sm leading-relaxed text-neutral-300">{item.summary}</p>
+                  <p className="text-sm leading-relaxed text-fg-soft">{item.summary}</p>
                 </a>
               </li>
             ))}
