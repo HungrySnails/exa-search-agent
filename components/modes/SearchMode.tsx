@@ -66,6 +66,7 @@ export function SearchMode({
   const [items, setItems] = useState<NewsItem[]>([]);
   const [overview, setOverview] = useState("");
   const [costDollars, setCostDollars] = useState<number | null>(null);
+  const [elapsedMs, setElapsedMs] = useState<number | null>(null);
   const [fetchedAt, setFetchedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -115,6 +116,7 @@ export function SearchMode({
     setLoading(true);
     setError(null);
     setNotices([]);
+    const startedAt = performance.now();
     try {
       const res = await fetch("/api/search", {
         method: "POST",
@@ -146,6 +148,7 @@ export function SearchMode({
       setItems(data.items);
       setOverview(data.overview ?? "");
       setCostDollars(typeof data.costDollars === "number" ? data.costDollars : null);
+      setElapsedMs(performance.now() - startedAt);
       if (typeof data.costDollars === "number") onCost(data.costDollars);
       setNotices(Array.isArray(data.notices) ? data.notices : []);
       setFetchedAt(data.fetchedAt);
@@ -361,7 +364,7 @@ export function SearchMode({
                 {searchLabel ? `「${searchLabel}」の総括` : "総括"}
               </div>
               <p className="text-sm leading-relaxed text-neutral-200">{overview}</p>
-              {costDollars !== null && <CostLine dollars={costDollars} />}
+              <CostLine dollars={costDollars} elapsedMs={elapsedMs} />
               <ShareActions heading={searchLabel ? `「${searchLabel}」の総括` : "総括"} body={overview} />
             </section>
           )}

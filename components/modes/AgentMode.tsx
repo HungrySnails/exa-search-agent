@@ -22,6 +22,7 @@ type ResearchResult = {
   text: string;
   citations: Citation[];
   costDollars: number | null;
+  elapsedMs: number;
   summary: string;
   notices: string[];
 };
@@ -164,6 +165,7 @@ export function AgentMode({
     setResult(null);
     setSourcesOpen(false);
 
+    const startedAt = performance.now();
     try {
       const res = await fetch("/api/agent", {
         method: "POST",
@@ -185,7 +187,7 @@ export function AgentMode({
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
-      let finalResult: ResearchResult | null = null;
+      let finalResult: Omit<ResearchResult, "elapsedMs"> | null = null;
       let streamError: string | null = null;
 
       while (true) {
@@ -216,7 +218,7 @@ export function AgentMode({
 
       if (streamError) throw new Error(streamError);
       if (!finalResult) throw new Error("調査結果の取得に失敗しました");
-      setResult(finalResult);
+      setResult({ ...finalResult, elapsedMs: performance.now() - startedAt });
       if (finalResult.costDollars !== null) onCost(finalResult.costDollars);
       setQueryLabel(query);
     } catch (err) {
@@ -359,7 +361,7 @@ export function AgentMode({
               {result.text}
             </ReactMarkdown>
           </div>
-          {result.costDollars !== null && <CostLine dollars={result.costDollars} />}
+          <CostLine dollars={result.costDollars} elapsedMs={result.elapsedMs} />
           <ShareActions
             heading={queryLabel ? `「${queryLabel}」の調査結果` : "調査結果"}
             body={result.text}

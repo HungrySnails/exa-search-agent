@@ -1,3 +1,5 @@
+import { formatElapsed } from "@/lib/format-elapsed";
+
 /** Shared status-message primitives used by both Search and Agent modes. */
 
 export function ErrorBanner({ message }: { message: string }) {
@@ -20,12 +22,20 @@ export function NoticeBanner({ messages }: { messages: string[] }) {
   );
 }
 
-export function CostLine({ dollars }: { dollars: number }) {
-  return (
-    <p className="mt-3 text-right text-[11px] text-neutral-500">
-      コスト: ${dollars.toFixed(3)}
-    </p>
-  );
+/** Result footer: what the run cost and how long the user waited for it. */
+export function CostLine({
+  dollars,
+  elapsedMs,
+}: {
+  dollars: number | null;
+  elapsedMs: number | null;
+}) {
+  const parts = [
+    dollars !== null ? `コスト: $${dollars.toFixed(3)}` : null,
+    elapsedMs !== null ? `所要 ${formatElapsed(elapsedMs)}` : null,
+  ].filter((part): part is string => part !== null);
+  if (parts.length === 0) return null;
+  return <p className="mt-3 text-right text-[11px] text-neutral-500">{parts.join(" ・ ")}</p>;
 }
 
 /** Collapsed note listing Exa features this app deliberately leaves out. */
