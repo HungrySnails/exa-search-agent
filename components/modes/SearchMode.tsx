@@ -450,8 +450,10 @@ export function SearchMode({
                 >
                   <div className="mb-1 flex items-center justify-between text-xs text-neutral-500">
                     <span>{item.source}</span>
+                    {/* A real space between the two: a flex container doesn't render it,
+                        but text extraction (e.g. web clippers) would otherwise glue them. */}{" "}
                     {item.publishedDate && (
-                      <span>
+                      <time dateTime={item.publishedDate}>
                         {new Date(item.publishedDate).toLocaleString("ja-JP", {
                           year: "numeric",
                           month: "numeric",
@@ -459,7 +461,7 @@ export function SearchMode({
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
-                      </span>
+                      </time>
                     )}
                   </div>
                   <h3 className="mb-2 text-base font-semibold leading-snug">{item.title}</h3>
