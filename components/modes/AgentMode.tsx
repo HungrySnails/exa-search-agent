@@ -9,6 +9,7 @@ import { CostLine, EmptyHint, ErrorBanner, NoticeBanner, ScopeNote } from "@/com
 import { ShareActions } from "@/components/ShareActions";
 import { SidebarLayout } from "@/components/SidebarLayout";
 import { useBroadcast } from "@/hooks/useBroadcast";
+import { buildResultTitle, useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { EFFORT_OPTIONS, type ResearchEffort } from "@/lib/exa-options";
 
 const MAX_QUERY_CHARS = 500;
@@ -23,6 +24,7 @@ type ResearchResult = {
   citations: Citation[];
   costDollars: number | null;
   elapsedMs: number;
+  effort: ResearchEffort;
   summary: string;
   notices: string[];
 };
@@ -148,6 +150,12 @@ export function AgentMode({
   const [readFullText, setReadFullText] = useState(false);
 
   const broadcast = useBroadcast({ password, resetKey: result });
+  const resultEffortLabel = result
+    ? (EFFORT_OPTIONS.find((opt) => opt.id === result.effort)?.label ?? result.effort)
+    : null;
+  useDocumentTitle(
+    queryLabel && result ? buildResultTitle(queryLabel, `Exa Agent (${resultEffortLabel})`) : null,
+  );
 
   function buildSpeechText(full = readFullText) {
     if (!result) return "";
@@ -187,7 +195,7 @@ export function AgentMode({
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
-      let finalResult: Omit<ResearchResult, "elapsedMs"> | null = null;
+      let finalResult: Omit<ResearchResult, "elapsedMs" | "effort"> | null = null;
       let streamError: string | null = null;
 
       while (true) {
@@ -218,7 +226,7 @@ export function AgentMode({
 
       if (streamError) throw new Error(streamError);
       if (!finalResult) throw new Error("調査結果の取得に失敗しました");
-      setResult({ ...finalResult, elapsedMs: performance.now() - startedAt });
+      setResult({ ...finalResult, elapsedMs: performance.now() - startedAt, effort });
       if (finalResult.costDollars !== null) onCost(finalResult.costDollars);
       setQueryLabel(query);
     } catch (err) {
@@ -276,20 +284,6 @@ export function AgentMode({
             </button>
           </form>
 
-          <ScopeNote>
-            <p>
-              Exaの調査レベルには、ほかに次の3つがあります。本アプリは1回の処理をVercelの実行時間の上限（300秒）内に収める作りのため、対象外にしています。
-            </p>
-            <ul className="list-disc space-y-1 pl-4">
-              <li>最高(xhigh): 固定料金で最も徹底した調査。$1.00/回</li>
-              <li>自動(auto): 調査の範囲に応じてExaが計算量を決める。従量課金で、上限は既定$5/回（$1〜$100で指定可）</li>
-              <li>ウルトラ(ultra): 大規模なリスト作成や網羅的な調査向け。通常30分前後、最長3時間。従量課金で、上限は既定$20/回</li>
-            </ul>
-            <p>
-              従量課金の単価は、計算量1単位(ACU)あたり$0.10、検索1回あたり$0.005です。このほか、結果をJSONで受け取る構造化出力(outputSchema)、前回の調査の続き(previousRunId)、外部データ連携(dataSources)にも対応していません。
-            </p>
-          </ScopeNote>
-
           {loading && statusMessage && (
             <p className="mt-4 flex items-center gap-2 text-xs text-neutral-500">
               <span className="h-2 w-2 animate-pulse rounded-full bg-sky-500" />
@@ -302,9 +296,9 @@ export function AgentMode({
 
           {result?.summary && (
             <section className="mt-6 rounded-xl border border-emerald-900 bg-emerald-950/40 p-4">
-              <div className="mb-2 text-xs font-semibold text-emerald-400">
+              <h2 className="mb-2 text-xs font-semibold text-emerald-400">
                 {queryLabel ? `「${queryLabel}」の要約` : "要約"}
-              </div>
+              </h2>
               <div className="report-markdown text-sm leading-relaxed text-neutral-200">
                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
                   {result.summary}
@@ -348,14 +342,31 @@ export function AgentMode({
               }
             />
           )}
+
+          <ScopeNote>
+            <p>
+              Exaの調査レベルには、ほかに次の3つがあります。本アプリは1回の処理をVercelの実行時間の上限（300秒）内に収める作りのため、対象外にしています。
+            </p>
+            <ul className="list-disc space-y-1 pl-4">
+              <li>最高(xhigh): 固定料金で最も徹底した調査。$1.00/回</li>
+              <li>自動(auto): 調査の範囲に応じてExaが計算量を決める。従量課金で、上限は既定$5/回（$1〜$100で指定可）</li>
+              <li>ウルトラ(ultra): 大規模なリスト作成や網羅的な調査向け。通常30分前後、最長3時間。従量課金で、上限は既定$20/回</li>
+            </ul>
+            <p>
+              従量課金の単価は、計算量1単位(ACU)あたり$0.10、検索1回あたり$0.005です。このほか、結果をJSONで受け取る構造化出力(outputSchema)、前回の調査の続き(previousRunId)、外部データ連携(dataSources)にも対応していません。
+            </p>
+          </ScopeNote>
         </>
       }
     >
       {result && (
         <section className="mt-6 rounded-xl border border-sky-900 bg-sky-950/40 p-4">
-          <div className="mb-2 text-xs font-semibold text-sky-400">
+          <h2 className="mb-1 text-xs font-semibold text-sky-400">
             {queryLabel ? `「${queryLabel}」の調査結果` : "調査結果"}
-          </div>
+          </h2>
+          <p className="mb-2 text-[11px] text-neutral-500">
+            Exa Agent ・ 調査レベル {resultEffortLabel}({result.effort})
+          </p>
           <div className="report-markdown text-sm leading-relaxed text-neutral-200">
             <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
               {result.text}
@@ -385,9 +396,9 @@ export function AgentMode({
                   rel="noopener noreferrer"
                   className="block rounded-xl border border-neutral-800 bg-neutral-900 p-4 active:bg-neutral-800"
                 >
-                  <h2 className="mb-1 text-sm font-semibold leading-snug">
+                  <h3 className="mb-1 text-sm font-semibold leading-snug">
                     {citation.title ?? citation.url}
-                  </h2>
+                  </h3>
                   <p className="truncate text-xs text-neutral-500">{citation.url}</p>
                 </a>
               </li>

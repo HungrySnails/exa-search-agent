@@ -7,6 +7,7 @@ import { CostLine, EmptyHint, ErrorBanner, NoticeBanner, ScopeNote } from "@/com
 import { ShareActions } from "@/components/ShareActions";
 import { SidebarLayout } from "@/components/SidebarLayout";
 import { useBroadcast } from "@/hooks/useBroadcast";
+import { buildResultTitle, useDocumentTitle } from "@/hooks/useDocumentTitle";
 import {
   CATEGORY_OPTIONS,
   DEFAULT_CATEGORY,
@@ -83,11 +84,15 @@ export function SearchMode({
   const [maxAgeHours, setMaxAgeHours] = useState("");
   const [moderation, setModeration] = useState(false);
   const [searchLabel, setSearchLabel] = useState<string | null>(null);
+  // Snapshot of the conditions the shown result was fetched with, so the
+  // caption stays true while the form is edited for the next search.
+  const [run, setRun] = useState<{ mode: string; info: string } | null>(null);
   const [listOpen, setListOpen] = useState(false);
   // When on, the reading also covers each article's summary below the overview.
   const [readSummaries, setReadSummaries] = useState(false);
 
   const broadcast = useBroadcast({ password, resetKey: overview });
+  useDocumentTitle(searchLabel && run ? buildResultTitle(searchLabel, run.mode) : null);
 
   const selectedCategory = category || null;
   const allowsPublishedDate = categoryAllowsPublishedDate(selectedCategory);
@@ -106,6 +111,19 @@ export function SearchMode({
       }
     }
     return segments.join("\n\n");
+  }
+
+  function describeRun(itemCount: number) {
+    const typeLabel = SEARCH_TYPE_OPTIONS.find((opt) => opt.id === searchType)?.label ?? searchType;
+    const categoryLabel = CATEGORY_OPTIONS.find((opt) => opt.id === selectedCategory)?.label;
+    const period =
+      allowsPublishedDate && (startDate || endDate)
+        ? `公開日 ${startDate || "…"}〜${endDate || "…"}`
+        : null;
+    const info = [`Exa Search`, typeLabel, categoryLabel, `${itemCount}件`, period]
+      .filter(Boolean)
+      .join(" ・ ");
+    return { mode: `Exa Search (${typeLabel})`, info };
   }
 
   async function handleSearch(e: React.FormEvent) {
@@ -153,6 +171,7 @@ export function SearchMode({
       setNotices(Array.isArray(data.notices) ? data.notices : []);
       setFetchedAt(data.fetchedAt);
       setSearchLabel(trimmed);
+      setRun(describeRun(data.items.length));
       setListOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "不明なエラーが発生しました");
@@ -339,30 +358,15 @@ export function SearchMode({
             </button>
           </form>
 
-          <ScopeNote>
-            <p>Exaの検索APIには、本アプリで扱っていない次の機能もあります。</p>
-            <ul className="list-disc space-y-1 pl-4">
-              <li>回答生成(/answer): 検索結果をもとに、出典付きの回答文を直接返す。$0.005/回</li>
-              <li>
-                構造化出力(outputSchema)・目的(objective)・追加クエリ(additionalQueries)・指示文(systemPrompt):
-                検索の意図を細かく伝え、結果をAIに統合・整形させる。料金表に個別の記載なし（outputSchemaは約2秒遅くなる）
-              </li>
-              <li>
-                本文以外の取得: 関連箇所の抜粋(highlights)・ページ要約(summary)・サブページ巡回(subpages)・リンクや画像の取得(extras)など。抜粋と要約は1ページ$0.001
-              </li>
-              <li>件数26〜100件: 11件目以降は1件$0.001（本アプリは要約処理の都合で25件まで）</li>
-              <li>Websets: 条件に合う企業・人物などを大量に集めて検証し、リストにする別サービス。料金体系も別</li>
-            </ul>
-          </ScopeNote>
-
           {error && <ErrorBanner message={error} />}
           <NoticeBanner messages={notices} />
 
           {overview && (
             <section className="mt-6 rounded-xl border border-sky-900 bg-sky-950/40 p-4">
-              <div className="mb-2 text-xs font-semibold text-sky-400">
+              <h2 className="mb-1 text-xs font-semibold text-sky-400">
                 {searchLabel ? `「${searchLabel}」の総括` : "総括"}
-              </div>
+              </h2>
+              {run && <p className="mb-2 text-[11px] text-neutral-500">{run.info}</p>}
               <p className="text-sm leading-relaxed text-neutral-200">{overview}</p>
               <CostLine dollars={costDollars} elapsedMs={elapsedMs} />
               <ShareActions heading={searchLabel ? `「${searchLabel}」の総括` : "総括"} body={overview} />
@@ -407,6 +411,22 @@ export function SearchMode({
               }
             />
           )}
+
+          <ScopeNote>
+            <p>Exaの検索APIには、本アプリで扱っていない次の機能もあります。</p>
+            <ul className="list-disc space-y-1 pl-4">
+              <li>回答生成(/answer): 検索結果をもとに、出典付きの回答文を直接返す。$0.005/回</li>
+              <li>
+                構造化出力(outputSchema)・目的(objective)・追加クエリ(additionalQueries)・指示文(systemPrompt):
+                検索の意図を細かく伝え、結果をAIに統合・整形させる。料金表に個別の記載なし（outputSchemaは約2秒遅くなる）
+              </li>
+              <li>
+                本文以外の取得: 関連箇所の抜粋(highlights)・ページ要約(summary)・サブページ巡回(subpages)・リンクや画像の取得(extras)など。抜粋と要約は1ページ$0.001
+              </li>
+              <li>件数26〜100件: 11件目以降は1件$0.001（本アプリは要約処理の都合で25件まで）</li>
+              <li>Websets: 条件に合う企業・人物などを大量に集めて検証し、リストにする別サービス。料金体系も別</li>
+            </ul>
+          </ScopeNote>
         </>
       }
     >
@@ -432,6 +452,7 @@ export function SearchMode({
                     {item.publishedDate && (
                       <span>
                         {new Date(item.publishedDate).toLocaleString("ja-JP", {
+                          year: "numeric",
                           month: "numeric",
                           day: "numeric",
                           hour: "2-digit",
@@ -440,7 +461,7 @@ export function SearchMode({
                       </span>
                     )}
                   </div>
-                  <h2 className="mb-2 text-base font-semibold leading-snug">{item.title}</h2>
+                  <h3 className="mb-2 text-base font-semibold leading-snug">{item.title}</h3>
                   <p className="text-sm leading-relaxed text-neutral-300">{item.summary}</p>
                 </a>
               </li>

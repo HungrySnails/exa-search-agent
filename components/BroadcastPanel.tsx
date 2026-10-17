@@ -47,7 +47,7 @@ export function BroadcastPanel({
   afterControls,
 }: BroadcastPanelProps) {
   return (
-    <section className="mt-4 rounded-xl border border-red-900 bg-neutral-900 p-4">
+    <aside aria-label="読み上げ" className="mt-4 rounded-xl border border-red-900 bg-neutral-900 p-4">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span
@@ -137,6 +137,6 @@ export function BroadcastPanel({
       {ttsError && <p className="mt-2 text-xs text-red-400">{ttsError}</p>}
 
       {afterControls}
-    </section>
+    </aside>
   );
 }

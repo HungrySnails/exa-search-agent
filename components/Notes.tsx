@@ -41,12 +41,14 @@ export function CostLine({
 /** Collapsed note listing Exa features this app deliberately leaves out. */
 export function ScopeNote({ children }: { children: React.ReactNode }) {
   return (
-    <details className="mt-4 rounded-lg border border-neutral-800 px-3 py-2 text-xs text-neutral-500">
-      <summary className="cursor-pointer select-none">
-        ※ Exaで選べる機能をすべて網羅してはいません
-      </summary>
-      <div className="mt-2 space-y-2 leading-relaxed">{children}</div>
-    </details>
+    <aside className="mt-4">
+      <details className="rounded-lg border border-neutral-800 px-3 py-2 text-xs text-neutral-500">
+        <summary className="cursor-pointer select-none">
+          ※ Exaで選べる機能をすべて網羅してはいません
+        </summary>
+        <div className="mt-2 space-y-2 leading-relaxed">{children}</div>
+      </details>
+    </aside>
   );
 }
 

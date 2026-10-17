@@ -56,14 +56,14 @@ export default function Home() {
             </button>
           ))}
         </div>
-        <p
+        <aside
           className="-mt-4 mb-6 text-right text-[11px] text-neutral-500"
           title="このブラウザで実行した分のみの集計です（他の端末の利用分は含みません）"
         >
           {monthlyCost.month}月のExa利用額: ${monthlyCost.current.dollars.toFixed(3)}（
           {monthlyCost.current.count}回）
           {monthlyCost.previous && ` ／ 先月: $${monthlyCost.previous.dollars.toFixed(3)}`}
-        </p>
+        </aside>
 
         {mode === "search" ? (
           <SearchMode
