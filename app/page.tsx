@@ -27,6 +27,12 @@ export default function Home() {
   // Shared across modes so switching tabs doesn't lose what was typed.
   const [query, setQuery] = useState("");
   const monthlyCost = useMonthlyCost();
+  const geminiIn = monthlyCost.current.geminiInputTokens ?? 0;
+  const geminiOut = monthlyCost.current.geminiOutputTokens ?? 0;
+  const geminiTokensLabel =
+    geminiIn + geminiOut > 0
+      ? `入力${geminiIn.toLocaleString("ja-JP")}・出力${geminiOut.toLocaleString("ja-JP")}トークン`
+      : null;
 
   if (!password) {
     return (
@@ -58,11 +64,12 @@ export default function Home() {
         </div>
         <aside
           className="-mt-4 mb-6 text-right text-[11px] text-neutral-500"
-          title="このブラウザで実行した分のみの集計です（他の端末の利用分は含みません）"
+          title="このブラウザで実行した分のみの集計です（他の端末の利用分は含みません）。Geminiはトークン数のみで、読み上げ(TTS)は含みません"
         >
           {monthlyCost.month}月のExa利用額: ${monthlyCost.current.dollars.toFixed(3)}（
           {monthlyCost.current.count}回）
           {monthlyCost.previous && ` ／ 先月: $${monthlyCost.previous.dollars.toFixed(3)}`}
+          {geminiTokensLabel && ` ／ Gemini: ${geminiTokensLabel}`}
         </aside>
 
         {mode === "search" ? (

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireEnv, validateQuery } from "@/lib/http";
 import { runDeepResearch, type ResearchEffort } from "@/lib/exa-agent";
 import { parseEffort } from "@/lib/exa-options";
+import { geminiUsageForResponse, newGeminiUsage, runWithGeminiUsage, type GeminiUsage } from "@/lib/gemini-usage";
 import {
   containsJapanese,
   isJapaneseText,
@@ -35,6 +36,8 @@ type StreamEvent =
       summary: string;
       /** Partial failures after the paid Exa run, shown to the user as-is. */
       notices: string[];
+      /** Gemini tokens used for this run; null unless SHOW_GEMINI_USAGE=1. */
+      geminiUsage: GeminiUsage | null;
     }
   | { type: "error"; error: string };
 
@@ -51,7 +54,10 @@ export async function POST(req: NextRequest) {
   if (queryError) return queryError;
 
   const encoder = new TextEncoder();
-  const stream = new ReadableStream<Uint8Array>({
+  const usage = newGeminiUsage();
+  // The stream's start callback runs inside this scope, so every Gemini
+  // call it awaits adds to `usage`.
+  const stream = runWithGeminiUsage(usage, () => new ReadableStream<Uint8Array>({
     async start(controller) {
       const send = (event: StreamEvent) => {
         controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
@@ -145,6 +151,7 @@ export async function POST(req: NextRequest) {
           costDollars: result.costDollars,
           summary,
           notices,
+          geminiUsage: geminiUsageForResponse(usage),
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : "不明なエラー";
@@ -153,7 +160,7 @@ export async function POST(req: NextRequest) {
         controller.close();
       }
     },
-  });
+  }));
 
   return new NextResponse(stream, {
     status: 200,

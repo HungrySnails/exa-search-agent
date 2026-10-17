@@ -7,6 +7,7 @@ import { CostLine, EmptyHint, ErrorBanner, NoticeBanner, ScopeNote } from "@/com
 import { ShareActions } from "@/components/ShareActions";
 import { SidebarLayout } from "@/components/SidebarLayout";
 import { useBroadcast } from "@/hooks/useBroadcast";
+import type { GeminiUsage } from "@/lib/gemini-usage";
 import { buildResultTitle, useDocumentTitle } from "@/hooks/useDocumentTitle";
 import {
   CATEGORY_OPTIONS,
@@ -60,7 +61,7 @@ export function SearchMode({
 }: {
   password: string;
   onUnauthorized: () => void;
-  onCost: (dollars: number) => void;
+  onCost: (dollars: number, geminiUsage?: GeminiUsage | null) => void;
   query: string;
   onQueryChange: (value: string) => void;
 }) {
@@ -167,7 +168,7 @@ export function SearchMode({
       setOverview(data.overview ?? "");
       setCostDollars(typeof data.costDollars === "number" ? data.costDollars : null);
       setElapsedMs(performance.now() - startedAt);
-      if (typeof data.costDollars === "number") onCost(data.costDollars);
+      if (typeof data.costDollars === "number") onCost(data.costDollars, data.geminiUsage ?? null);
       setNotices(Array.isArray(data.notices) ? data.notices : []);
       setFetchedAt(data.fetchedAt);
       setSearchLabel(trimmed);

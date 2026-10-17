@@ -1,9 +1,17 @@
 import { useEffect, useState } from "react";
+import type { GeminiUsage } from "@/lib/gemini-usage";
 
 const STORAGE_KEY = "exa-sogo-monthly-cost";
 const MONTHS_KEPT = 12;
 
-type MonthEntry = { dollars: number; count: number };
+// Gemini token counts are optional: older records and servers without
+// SHOW_GEMINI_USAGE=1 don't have them.
+type MonthEntry = {
+  dollars: number;
+  count: number;
+  geminiInputTokens?: number;
+  geminiOutputTokens?: number;
+};
 type CostHistory = Record<string, MonthEntry>;
 
 /** "YYYY-MM" of the JST calendar month, so totals close at JST month-end. */
@@ -27,7 +35,8 @@ function readHistory(): CostHistory {
 
 /**
  * Running total of Exa cost per month, recorded in this browser only (other
- * devices are not included). Each mode reports the costDollars Exa returned.
+ * devices are not included). Each mode reports the costDollars Exa returned,
+ * plus the Gemini token counts when the server provides them.
  */
 export function useMonthlyCost() {
   const [history, setHistory] = useState<CostHistory>({});
@@ -37,12 +46,17 @@ export function useMonthlyCost() {
     setHistory(readHistory());
   }, []);
 
-  function addCost(dollars: number) {
+  function addCost(dollars: number, geminiUsage?: GeminiUsage | null) {
     const key = monthKey();
     // Re-read so a total added from another tab isn't overwritten.
     const next = readHistory();
     const entry = next[key] ?? { dollars: 0, count: 0 };
-    next[key] = { dollars: entry.dollars + dollars, count: entry.count + 1 };
+    next[key] = {
+      dollars: entry.dollars + dollars,
+      count: entry.count + 1,
+      geminiInputTokens: (entry.geminiInputTokens ?? 0) + (geminiUsage?.inputTokens ?? 0),
+      geminiOutputTokens: (entry.geminiOutputTokens ?? 0) + (geminiUsage?.outputTokens ?? 0),
+    };
     for (const old of Object.keys(next).sort().slice(0, -MONTHS_KEPT)) delete next[old];
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));

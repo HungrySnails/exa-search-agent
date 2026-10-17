@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireEnv, validateQuery } from "@/lib/http";
 import { parseSearchParams } from "@/lib/exa-options";
 import { containsJapanese, translateSearchQueryToEnglish } from "@/lib/gemini";
+import { geminiUsageForResponse, newGeminiUsage, runWithGeminiUsage } from "@/lib/gemini-usage";
 import { runNewsSearch } from "@/lib/news";
 
 export const runtime = "nodejs";
@@ -26,14 +27,16 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Exa's results skew toward English-language sources, so a Japanese
-    // query is translated first to get better matches.
-    const exaQuery = containsJapanese(query)
-      ? await translateSearchQueryToEnglish(geminiApiKey, query)
-      : query;
-
-    const payload = await runNewsSearch(exaApiKey, geminiApiKey, exaQuery, params, `「${query}」`);
-    return NextResponse.json({ ...payload, query });
+    const usage = newGeminiUsage();
+    const payload = await runWithGeminiUsage(usage, async () => {
+      // Exa's results skew toward English-language sources, so a Japanese
+      // query is translated first to get better matches.
+      const exaQuery = containsJapanese(query)
+        ? await translateSearchQueryToEnglish(geminiApiKey, query)
+        : query;
+      return runNewsSearch(exaApiKey, geminiApiKey, exaQuery, params, `「${query}」`);
+    });
+    return NextResponse.json({ ...payload, query, geminiUsage: geminiUsageForResponse(usage) });
   } catch (err) {
     const message = err instanceof Error ? err.message : "不明なエラー";
     return NextResponse.json({ error: message }, { status: 502 });

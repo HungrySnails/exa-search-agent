@@ -9,6 +9,7 @@ import { CostLine, EmptyHint, ErrorBanner, NoticeBanner, ScopeNote } from "@/com
 import { ShareActions } from "@/components/ShareActions";
 import { SidebarLayout } from "@/components/SidebarLayout";
 import { useBroadcast } from "@/hooks/useBroadcast";
+import type { GeminiUsage } from "@/lib/gemini-usage";
 import { buildResultTitle, useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { EFFORT_OPTIONS, type ResearchEffort } from "@/lib/exa-options";
 
@@ -25,6 +26,7 @@ type ResearchResult = {
   costDollars: number | null;
   elapsedMs: number;
   effort: ResearchEffort;
+  geminiUsage: GeminiUsage | null;
   summary: string;
   notices: string[];
 };
@@ -43,6 +45,7 @@ type ResearchStreamEvent =
       costDollars: number | null;
       summary: string;
       notices: string[];
+      geminiUsage: GeminiUsage | null;
     }
   | { type: "error"; error: string };
 
@@ -135,7 +138,7 @@ export function AgentMode({
 }: {
   password: string;
   onUnauthorized: () => void;
-  onCost: (dollars: number) => void;
+  onCost: (dollars: number, geminiUsage?: GeminiUsage | null) => void;
   query: string;
   onQueryChange: (value: string) => void;
 }) {
@@ -217,6 +220,7 @@ export function AgentMode({
               costDollars: event.costDollars,
               summary: event.summary,
               notices: event.notices ?? [],
+              geminiUsage: event.geminiUsage ?? null,
             };
           } else if (event.type === "error") {
             streamError = event.error;
@@ -227,7 +231,7 @@ export function AgentMode({
       if (streamError) throw new Error(streamError);
       if (!finalResult) throw new Error("調査結果の取得に失敗しました");
       setResult({ ...finalResult, elapsedMs: performance.now() - startedAt, effort });
-      if (finalResult.costDollars !== null) onCost(finalResult.costDollars);
+      if (finalResult.costDollars !== null) onCost(finalResult.costDollars, finalResult.geminiUsage);
       setQueryLabel(query);
     } catch (err) {
       setError(err instanceof Error ? err.message : "不明なエラーが発生しました");

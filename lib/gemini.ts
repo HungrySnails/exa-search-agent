@@ -1,3 +1,5 @@
+import { recordGeminiUsage } from "@/lib/gemini-usage";
+
 const GEMINI_MODEL = "gemini-3.5-flash-lite";
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
@@ -60,6 +62,7 @@ export async function generateText(
   }
 
   const data = await res.json();
+  recordGeminiUsage(data?.usageMetadata);
   const output: string | undefined =
     data?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!output) throw new Error("Gemini応答が空です");
