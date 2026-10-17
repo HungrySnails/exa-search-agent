@@ -28,17 +28,17 @@ UI上の選択肢は、Exa側の呼称（APIの値）にそろえて「日本語
 - **詳細オプション**: 件数(numResults、1〜25件) / 対象ドメイン(includeDomains) / 除外ドメイン(excludeDomains) /
   公開日(startPublishedDate・endPublishedDate) / 地域(userLocation) / 鮮度(maxAgeHours) /
   不適切コンテンツ除外(moderation)。Exaが受け付けない組み合わせ（企業・人物での公開日、人物での除外ドメイン）は入力不可
-- 要約カードにExaの呼び出しコストを表示
+- 結果の見出しの下に実行条件（検索タイプ・カテゴリ・件数など）、下にExaの呼び出しコストと所要時間を表示
 - レスポンス: 数秒〜1分程度
 
 ### Exa Agent（調査）
 - [Exa Agent API](https://exa.ai/docs/agent/quickstart) による、出典付きの多段階Web調査レポート生成
 - **調査レベル(effort)**: 最小(minimal)※既定 / 低(low) / 中(medium) / 高(high)。NDJSONストリーミングで進捗を表示
-- 出典付きレポート（Markdown表示）と参照元一覧、コスト表示
+- 出典付きレポート（Markdown表示）と参照元一覧、実行条件・コスト・所要時間の表示
 - レスポンス: 数十秒〜数分
 
 ### 本アプリで扱っていないExaの機能
-Exaの選択肢をすべて網羅してはいません。各モードの画面下部にも同じ注記を折りたたみで表示しています。
+Exaの選択肢をすべて網羅してはいません。各モードの画面にも同じ注記を折りたたみで表示しています（結果が出ているときは結果の後ろに移ります）。
 
 | 機能 | できること | 料金 |
 |---|---|---|
@@ -58,6 +58,12 @@ Agentの従量課金の単価は、計算量1単位(ACU)あたり$0.10、検索1
 
 - **月ごとのExa利用額**: モード切替タブの下に、今月（日本時間の月末締め）と先月のExa利用額・回数を表示します。
   各回の結果に含まれるExaのコストをブラウザに記録して合計しているため、他の端末での利用分は含みません。
+  サーバーの環境変数`SHOW_GEMINI_USAGE=1`を設定すると、Geminiのトークン数の月間合計も並べて表示します
+  （金額は出さず、読み上げ(TTS)の分は含みません）。
+- **所要時間**: 各回の結果の下に、送信してから結果が出るまでの時間（翻訳・要約・通信を含む）をコストと並べて表示します。
+- **ライト/ダーク**: 端末のシステム設定（ライト/ダーク）に自動で追従します。切り替えボタンはありません。
+- **タブのタイトル**: 結果が出ると、タブのタイトルが「検索語 - Exa Search (…)」の形になります。ブックマークや
+  Webクリップの既定の名前としてそのまま使えます。
 - **Geminiが失敗しても結果を捨てない**: Exaの検索・調査が済んだ後にGeminiの翻訳・要約が失敗した場合（利用上限など）は、
   英語の原文や要約なしの記事一覧を、理由の注記付きで表示します。Exaに支払った分の結果が失われないようにするためです。
 - **エラーの日本語化**: Exa・Geminiのエラーは、利用上限・クレジット残高不足・APIキーの問題などを日本語で表示します。
@@ -82,12 +88,16 @@ Agentの従量課金の単価は、計算量1単位(ACU)あたり$0.10、検索1
 - `lib/exa-client.ts` … Exa APIへの共通fetch基盤（`/search`・Agent Runs両方が使用）
 - `lib/exa-options.ts` … UIに出すExaの選択肢（表記・料金の目安）と、APIルートでの入力検証（両モード共通）
 - `lib/gemini.ts` … Gemini呼び出しの共通ヘルパー（日本語判定、翻訳、要約、タイトル翻訳）
+- `lib/gemini-usage.ts` … 1回の処理ごとのGeminiトークン数の集計（`SHOW_GEMINI_USAGE=1`のときだけ画面に出す）
+- `lib/format-elapsed.ts` … 所要時間の表記（「3.2秒」「4分12秒」）
 - `lib/news.ts` … Exa `/search` 検索 + Gemini要約（Search modeのみが使用）
 - `lib/exa-agent.ts` … Exa Agent Runs APIのラッパー（Agent modeのみが使用）
 - `lib/speech/segment.ts` … TTS用のテキスト分割・リンク除去（両モード共通）
 - `lib/share-export.ts` … 共有・コピー用テキストの組み立て（Markdownリンクの平文化、参照元一覧の付加）
 - `hooks/useBroadcast.ts` … 読み上げ（ブラウザ/Gemini二択、再生・一時停止・キャッシュ・リトライ）の状態管理（両モード共通）
 - `hooks/usePasswordGate.ts` … パスワードゲートの状態管理
+- `hooks/useMonthlyCost.ts` … 月ごとのExa利用額（とGeminiトークン数）のブラウザ内集計
+- `hooks/useDocumentTitle.ts` … 結果に応じたタブのタイトル
 - `components/BroadcastPanel.tsx` / `components/PasswordGate.tsx` / `components/SidebarLayout.tsx` /
   `components/CollapsibleSection.tsx` / `components/Notes.tsx`（エラー表示・コスト表示・空状態ヒント） /
   `components/ShareActions.tsx`（共有・書式付きコピー。書式付きコピー用のHTMLも`react-markdown`から生成） … 共通UI
@@ -96,10 +106,11 @@ Agentの従量課金の単価は、計算量1単位(ACU)あたり$0.10、検索1
 - `app/api/agent/route.ts` … Agent mode用APIルート（NDJSONストリーミング）
 - `app/api/tts/route.ts` … Gemini音声合成APIルート（両モード共通）
 - `app/page.tsx` … シェル（パスワードゲート + モード切替タブ、検索クエリの状態を保持）
+- `app/globals.css` … 配色。色は役割名（`bg-card`・`text-muted`など）で一か所に定義し、ライト/ダークを切り替える
 
 ## 事前準備
 
-1. **Exa APIキー**: https://dashboard.exa.ai/ で発行（Agent Runs APIを使う場合は対応プランが必要）
+1. **Exa APIキー**: https://dashboard.exa.ai/ で発行（Agent Runs APIも、無料(Free)のチームを含め、追加のプラン契約なしで使えます）
 2. **Gemini APIキー**: https://aistudio.google.com/apikey で無料のAPIキーを発行
 3. 任意の合言葉（配布用の固定パスワード）を決める
 
@@ -151,6 +162,7 @@ http://localhost:3000 を開いて動作確認できます。
 ## 無料枠・利用コストに関する余裕度
 
 呼び出し先ごとに無料枠/コストの余裕度がかなり異なるため、把握しておくと運用で困りにくくなります。
+料金や無料枠は変わりやすく、以下は2026年10月時点の目安です。実際の条件は各社の最新の案内で確認してください。
 
 - **Exaの無料クレジット**: 登録時に$10が付与され、毎月1日に$10へ戻る（支払い方法の登録は不要）。
   ダッシュボードでのオンボーディング完了で、初回のみ$10のボーナスもある。
@@ -183,7 +195,7 @@ Gemini音声を前提にした運用（安定した音質・多人数配布な�
 ## セキュリティに関する注意
 
 - `APP_PASSWORD`による認証は、固定の合言葉をリクエストヘッダーで都度送信する簡易的な仕組みです
-  （ハッシュ化やセッション管理は行っていません）。身内・少人数への配布を想定した簡易ゲートであり、
+  （セッション管理やトークン化は行っておらず、サーバー側の照合のみ一定時間で比較します）。身内・少人数への配布を想定した簡易ゲートであり、
   不特定多数へ公開する用途には向いていません。URLとパスワードの両方を知る人は誰でもAPIを呼び出せる
   （＝API利用コストを発生させられる）ため、合言葉は推測されにくいものにし、他人に知られた場合は
   速やかに変更してください。
