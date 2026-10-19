@@ -3,7 +3,7 @@ import type { ResearchEffort } from "@/lib/exa-options";
 
 export type { ResearchEffort };
 
-const POLL_INTERVAL_MS = 3000;
+const POLL_INTERVAL_MS = 6000;
 // Leaves ~30s of the route's 300s maxDuration for query/result translation
 // and network overhead around the poll loop.
 const MAX_POLL_MS = 270_000;
