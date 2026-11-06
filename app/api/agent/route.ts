@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const query = typeof body?.query === "string" ? body.query.trim() : "";
   const effort: ResearchEffort = parseEffort(body?.effort) ?? "minimal";
+  const skipTranslation = body?.skipTranslation === true;
 
   const queryError = validateQuery(query, { label: "調査内容", maxChars: MAX_QUERY_CHARS });
   if (queryError) return queryError;
@@ -64,10 +65,11 @@ export async function POST(req: NextRequest) {
       };
 
       try {
-        // 日本語クエリは調査前にGeminiで英語の指示文に翻訳する。クエリが
-        // 英語でもExa Agentの出力は英語になるため、結果の翻訳はクエリの
-        // 言語に関わらず常に行う（下のtranslating_resultブロック）。
-        const exaQuery = containsJapanese(query)
+        // 日本語クエリは調査前にGeminiで英語の指示文に翻訳する（ユーザーが
+        // 翻訳しない選択をした場合は除く）。クエリが英語でもExa Agentの
+        // 出力は英語になるため、結果の翻訳はクエリの言語に関わらず常に
+        // 行う（下のtranslating_resultブロック）。
+        const exaQuery = !skipTranslation && containsJapanese(query)
           ? await (async () => {
               send({ type: "status", phase: "translating_query" });
               return translateResearchQueryToEnglish(geminiApiKey, query);

@@ -25,13 +25,15 @@ export async function POST(req: NextRequest) {
   if (typeof params === "string") {
     return NextResponse.json({ error: params }, { status: 400 });
   }
+  const skipTranslation = body?.skipTranslation === true;
 
   try {
     const usage = newGeminiUsage();
     const payload = await runWithGeminiUsage(usage, async () => {
       // Exa's results skew toward English-language sources, so a Japanese
-      // query is translated first to get better matches.
-      const exaQuery = containsJapanese(query)
+      // query is translated first to get better matches, unless the user
+      // asked to send it as-is (e.g. to search for Japanese-language sources).
+      const exaQuery = !skipTranslation && containsJapanese(query)
         ? await translateSearchQueryToEnglish(geminiApiKey, query)
         : query;
       return runNewsSearch(exaApiKey, geminiApiKey, exaQuery, params, `「${query}」`);

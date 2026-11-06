@@ -84,6 +84,7 @@ export function SearchMode({
   const [userLocation, setUserLocation] = useState("");
   const [maxAgeHours, setMaxAgeHours] = useState("");
   const [moderation, setModeration] = useState(false);
+  const [skipTranslation, setSkipTranslation] = useState(false);
   const [searchLabel, setSearchLabel] = useState<string | null>(null);
   // Snapshot of the conditions the shown result was fetched with, so the
   // caption stays true while the form is edited for the next search.
@@ -157,6 +158,7 @@ export function SearchMode({
           userLocation: userLocation || null,
           moderation,
           maxAgeHours: maxAgeHours === "" ? null : Number(maxAgeHours),
+          skipTranslation,
         }),
       });
       const data = await res.json();
@@ -346,6 +348,15 @@ export function SearchMode({
                     className="h-4 w-4 accent-sky-500"
                   />
                   不適切コンテンツ除外(moderation)
+                </label>
+                <label className="flex items-center gap-2 text-xs text-muted">
+                  <input
+                    type="checkbox"
+                    checked={skipTranslation}
+                    onChange={(e) => setSkipTranslation(e.target.checked)}
+                    className="h-4 w-4 accent-sky-500"
+                  />
+                  クエリを英訳しない（原文のまま検索・国内向けの話題向け）
                 </label>
               </div>
             </CollapsibleSection>

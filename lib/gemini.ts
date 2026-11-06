@@ -76,7 +76,7 @@ export async function translateSearchQueryToEnglish(
 ): Promise<string> {
   return generateText(
     apiKey,
-    `次の日本語の検索語句を、Web検索エンジンに適した簡潔な英語のキーワードに翻訳してください。翻訳結果のみを出力し、説明や前置きは含めないでください。\n\n${text}`
+    `次の日本語の検索語句を、Web検索エンジンに適した簡潔な英語のキーワードに翻訳してください。語を落とさず、曖昧で一語に定まらない語は訳語の後に括弧で元の日本語を残してください（例: 運用(オペレーション)）。翻訳結果のみを出力し、説明や前置きは含めないでください。\n\n${text}`
   );
 }
 
@@ -87,7 +87,7 @@ export async function translateResearchQueryToEnglish(
 ): Promise<string> {
   return generateText(
     apiKey,
-    `次の日本語の調査依頼を、Web調査エージェントに適した簡潔な英語の指示文に翻訳してください。翻訳結果のみを出力し、説明や前置きは含めないでください。\n\n${text}`
+    `次の日本語の調査依頼を、Web調査エージェントに適した簡潔な英語の指示文に翻訳してください。語を落とさず、曖昧で一語に定まらない語は訳語の後に括弧で元の日本語を残してください（例: 運用(オペレーション)）。翻訳結果のみを出力し、説明や前置きは含めないでください。\n\n${text}`
   );
 }
 

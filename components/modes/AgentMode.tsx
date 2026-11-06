@@ -143,6 +143,7 @@ export function AgentMode({
   onQueryChange: (value: string) => void;
 }) {
   const [effort, setEffort] = useState<ResearchEffort>("minimal");
+  const [skipTranslation, setSkipTranslation] = useState(false);
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -184,7 +185,7 @@ export function AgentMode({
           "content-type": "application/json",
           "x-app-password": password,
         },
-        body: JSON.stringify({ query, effort }),
+        body: JSON.stringify({ query, effort, skipTranslation }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -279,6 +280,15 @@ export function AgentMode({
                 ))}
               </div>
             </div>
+            <label className="flex items-center gap-2 text-xs text-muted">
+              <input
+                type="checkbox"
+                checked={skipTranslation}
+                onChange={(e) => setSkipTranslation(e.target.checked)}
+                className="h-4 w-4 accent-sky-500"
+              />
+              クエリを英訳しない（原文のまま調査・国内向けの話題向け）
+            </label>
             <button
               type="submit"
               disabled={loading || !queryInput.trim()}
