@@ -1,4 +1,4 @@
-// マイク → 16kHz PCM16LE (AudioWorklet 経由)。live-api-lab STAGE0.md §4 S4 / §6.4 参照。
+// マイク → 16kHz PCM16LE (AudioWorklet 経由)。Live APIの入力音声の形式に合わせる。
 
 const TARGET_SAMPLE_RATE = 16000;
 

@@ -1,8 +1,6 @@
 "use client";
 
-// 調査レポートへの音声質疑応答パネル。LIVE_QA.md §6参照。
-// 評価は体感で行うため、ログ記録・ダウンロード機能は持たない
-// (ラボのRecorderのような計測機構は、この組み込みでは作らない)。
+// 調査レポートへの音声質疑応答パネル。ログ記録・ダウンロード機能は持たない。
 // 接続・マイク・再生・再接続は共通フック(lib/use-live-session.ts)が受け持つ。
 
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";

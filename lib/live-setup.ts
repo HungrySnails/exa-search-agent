@@ -1,6 +1,5 @@
 // setup メッセージを組み立てる。サーバー(トークン発行)とクライアント(接続直後の送信)で共有する。
-// exa-agent-researchのLIVE_QA.md・LIVE_SHARED.mdを元に、質疑応答(mode: qa)のみを移植した
-// もの(テーマ相談(mode: theme)は移植範囲外)。モデル・声・VAD・圧縮は固定する。
+// 結果への質疑応答に使う。モデル・声・VAD・圧縮は固定する。
 
 export const MODEL = "gemini-3.8-live";
 export const VOICE_NAME = "Zephyr";
@@ -58,9 +57,8 @@ export const DEFAULT_VOICE_BY_GENDER = {
   male: "Zubenelgenubi",
 } as const;
 
-// 公開版は不特定の利用者が増えるため、exa-agent-research(実験場。指示なしで観察する方針)とは
-// 異なり、言語・留保・URLの扱いを明示的に指示する(作者の決定)。exa-agent-researchでの観察
-// (LIVE_QA.md §11)では指示が無くても同じ挙動だったが、安全側に倒す。
+// 言語・留保・URLの扱いは明示的に指示する。指示が無くても日本語で答え、留保を残し、URLを
+// 読み上げないことが多いが、利用者や題材が変わっても同じ挙動になるよう、安全側に倒す。
 const SYSTEM_INSTRUCTION_HEADER = `あなたは、以下の「題材」(Exaによる調査レポート)について、ユーザーと対話しながら内容を
 掘り下げる相手です。
 

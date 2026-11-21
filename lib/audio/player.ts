@@ -1,5 +1,4 @@
 // 24kHz PCM16LE の逐次再生。interrupted 受信時にスケジュール済みの再生を破棄する。
-// live-api-lab STAGE0.md §4 S4 / §6.5、M1.md §2.1・§2.3 参照。
 
 const PLAYBACK_SAMPLE_RATE = 24000;
 

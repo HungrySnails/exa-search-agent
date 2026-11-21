@@ -1,8 +1,7 @@
 "use client";
 
 // Gemini Live APIとの声の対話セッション(接続・再接続・マイク・再生・文字起こし)を
-// まとめたフック。LiveQaPanel・ThemeTalkPanelで共有する。LIVE_SHARED.md参照。
-// パネルごとに違うのは、トークン要求のbodyと、関数呼び出しの処理だけ。
+// まとめたフック。パネルごとに違うのは、トークン要求のbodyと、関数呼び出しの処理だけ。
 
 import { useRef, useState } from "react";
 import { MicCapture } from "@/lib/audio/capture";
@@ -180,7 +179,6 @@ export function useLiveSession(options: LiveSessionOptions) {
           return;
         }
         // 約10分で切れる(1011)ことが多い。再開ハンドルがあれば1回だけ自動再接続する。
-        // LIVE_QA.md §2・§6参照。
         if (resumptionHandleRef.current && !autoReconnectedRef.current) {
           autoReconnectedRef.current = true;
           void connect();
@@ -415,7 +413,7 @@ export function useLiveSession(options: LiveSessionOptions) {
     optionsRef.current.onBeforeStart?.();
     userEndedRef.current = false;
     autoReconnectedRef.current = false;
-    // 新規接続は前回の再開ハンドルを引き継がない(LIVE_QA.md §2)。
+    // 新規接続は前回の再開ハンドルを引き継がない(引き継ぐと、前の会話の続きとして再開されてしまう)。
     resumptionHandleRef.current = null;
     turnBoundaryPendingRef.current = true;
     modelTurnActiveRef.current = false;
