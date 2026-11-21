@@ -85,6 +85,8 @@ export function useLiveSession(options: LiveSessionOptions) {
   const micRef = useRef<MicCapture | null>(null);
   const playerRef = useRef<PcmPlayer | null>(null);
   const resumptionHandleRef = useRef<string | null>(null);
+  // SHOW_GEMINI_USAGE=1のサーバーでのみusageMetadataを積算する(live-tokenの応答で届く)。
+  const showUsageRef = useRef(false);
   const userEndedRef = useRef(false);
   const autoReconnectedRef = useRef(false);
   const turnBoundaryPendingRef = useRef(true);
@@ -140,6 +142,7 @@ export function useLiveSession(options: LiveSessionOptions) {
         micRef.current = null;
         return;
       }
+      showUsageRef.current = data.showUsage === true;
 
       const wsUrl = `wss://${WS_HOST}${WS_PATH}?access_token=${encodeURIComponent(data.token)}`;
       const ws = new WebSocket(wsUrl);
@@ -284,7 +287,7 @@ export function useLiveSession(options: LiveSessionOptions) {
     const usageMetadata = msg.usageMetadata as
       | { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number }
       | undefined;
-    if (usageMetadata) {
+    if (usageMetadata && showUsageRef.current) {
       const count = (v: unknown) => (typeof v === "number" && v > 0 ? v : 0);
       setUsage({
         inputTokens: count(usageMetadata.promptTokenCount),

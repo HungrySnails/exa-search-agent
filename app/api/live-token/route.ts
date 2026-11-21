@@ -87,7 +87,13 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  return NextResponse.json({ token: tokenResult.name, setup });
+  return NextResponse.json({
+    token: tokenResult.name,
+    setup,
+    // SHOW_GEMINI_USAGE=1のときだけ、クライアントがトークン数を積算・報告する
+    // (search/agentでのGeminiトークン表示と同じオプトインに揃える)。
+    showUsage: process.env.SHOW_GEMINI_USAGE === "1",
+  });
 }
 
 // REST の AuthToken リソースの項目名は `bidiGenerateContentSetup` + `fieldMask`
