@@ -77,8 +77,8 @@ Agentの従量課金の単価は、計算量1単位(ACU)あたり$0.10、検索1
   - どちらもHTTPS（または`localhost`）でのみ動作します。LAN内のIPアドレス（`http://192.168.x.x:3000`等）で
     開いた開発サーバーでは使えません。
 
-両モードとも、結果を音声で読み上げ可能です（ブラウザ標準の音声合成、またはGemini TTSの `/api/tts`。詳細は
-「TTS（読み上げ）について」を参照）。
+両モードとも、結果についてマイクで声で質問できます（Gemini Live APIによる音声対話。詳細は
+「声で質問する（音声対話）について」を参照）。
 
 ## 構成
 
@@ -92,19 +92,25 @@ Agentの従量課金の単価は、計算量1単位(ACU)あたり$0.10、検索1
 - `lib/format-elapsed.ts` … 所要時間の表記（「3.2秒」「4分12秒」）
 - `lib/news.ts` … Exa `/search` 検索 + Gemini要約（Search modeのみが使用）
 - `lib/exa-agent.ts` … Exa Agent Runs APIのラッパー（Agent modeのみが使用）
-- `lib/speech/segment.ts` … TTS用のテキスト分割・リンク除去（両モード共通）
+- `lib/live-setup.ts` … Gemini Live APIの`setup`組み立て（モデル・声・システム指示・関数宣言）
+- `lib/live-context.ts` … 声の質疑応答の文脈に渡す前の前処理（Markdownリンクの除去のみ。要約・和訳はしない）
+- `lib/use-live-session.ts` … 声の質疑応答の接続・再接続・マイク・再生・文字起こしをまとめた共通フック
+- `lib/use-wake-lock.ts` … 声の対話中、画面の自動消灯を止める（Screen Wake Lock API）
+- `lib/audio/capture.ts` / `lib/audio/player.ts` / `public/pcm-worklet.js` … マイク→PCM16変換・PCM逐次再生
 - `lib/share-export.ts` … 共有・コピー用テキストの組み立て（Markdownリンクの平文化、参照元一覧の付加）
-- `hooks/useBroadcast.ts` … 読み上げ（ブラウザ/Gemini二択、再生・一時停止・キャッシュ・リトライ）の状態管理（両モード共通）
 - `hooks/usePasswordGate.ts` … パスワードゲートの状態管理
-- `hooks/useMonthlyCost.ts` … 月ごとのExa利用額（とGeminiトークン数）のブラウザ内集計
+- `hooks/useMonthlyCost.ts` … 月ごとのExa利用額・Geminiトークン数のブラウザ内集計
 - `hooks/useDocumentTitle.ts` … 結果に応じたタブのタイトル
-- `components/BroadcastPanel.tsx` / `components/PasswordGate.tsx` / `components/SidebarLayout.tsx` /
+- `components/PasswordGate.tsx` / `components/SidebarLayout.tsx` /
   `components/CollapsibleSection.tsx` / `components/Notes.tsx`（エラー表示・コスト表示・空状態ヒント） /
   `components/ShareActions.tsx`（共有・書式付きコピー。書式付きコピー用のHTMLも`react-markdown`から生成） … 共通UI
+- `components/LiveQaPanel.tsx` … 声で質問するパネル本体（両モード共通）
+- `components/live/` … 声の対話の画面部品（声選択・マイク音量・開始終了ボタン・文字起こし一覧）
 - `components/modes/SearchMode.tsx` / `components/modes/AgentMode.tsx` … モード別UI
 - `app/api/search/route.ts` … Search mode用APIルート
 - `app/api/agent/route.ts` … Agent mode用APIルート（NDJSONストリーミング）
-- `app/api/tts/route.ts` … Gemini音声合成APIルート（両モード共通）
+- `app/api/live-token/route.ts` … Gemini Live APIの一時トークン発行ルート（両モード共通）
+- `app/api/fetch-source/route.ts` … 声の質疑応答から参照元の本文を取得するルート（Exa `/contents`）
 - `app/page.tsx` … シェル（パスワードゲート + モード切替タブ、検索クエリの状態を保持）
 - `app/globals.css` … 配色。色は役割名（`bg-card`・`text-muted`など）で一か所に定義し、ライト/ダークを切り替える
 
@@ -133,7 +139,7 @@ http://localhost:3000 を開いて動作確認できます。
    - `EXA_API_KEY`
    - `GEMINI_API_KEY`
    - `APP_PASSWORD`
-   - （任意）`SHOW_GEMINI_USAGE` = `1` : 画面上部の月額表示に、Geminiのトークン数の月間合計を加えます。金額は出しません（単価や無料枠は変わりやすいため）。読み上げ(TTS)の分は含みません
+   - （任意）`SHOW_GEMINI_USAGE` = `1` : 画面上部の月額表示に、Geminiのトークン数の月間合計を加えます。金額は出しません（単価や無料枠は変わりやすいため）。声の質疑応答(Live API)の分も含みます
 4. Deploy
 
 デプロイ後に発行されるURLに、スマートフォンなどからアクセスしてください。初回アクセス時にパスワードを
@@ -174,23 +180,30 @@ http://localhost:3000 を開いて動作確認できます。
   月$10の無料枠では、高(high)なら20回、低(low)なら400回が目安になるため、高い調査レベルでの連続実行は余裕を見ながら行うこと。
 - **Gemini（テキスト生成・翻訳・要約、`gemini-3.5-flash-lite`）**: 無料枠のレート制限は比較的緩く、
   通常のインタラクティブな利用であれば日常的に上限に達することは少ない。
-- **Gemini TTS（音声合成）**: 無料枠のレート制限が非常に厳しく（1日あたりの呼び出し回数上限が一桁台に
-  設定されている場合がある）、他の呼び出しに比べて圧倒的に余裕がない。詳細は次項を参照。
+- **Gemini Live API（声の質疑応答、`gemini-3.8-live`）**: 対話中はマイクの音声を継続して送るため、
+  他の呼び出しに比べて使用量が読みにくい。詳細は次項を参照。
 
-## TTS（読み上げ）について
+## 声で質問する（音声対話）について
 
-読み上げ機能のGemini音声エンジンは **実験的な機能** として用意しているものです。長文は複数セグメントに
-分割してから音声合成APIを呼び出す実装になっているため、1回の読み上げ操作だけで無料枠の呼び出し回数上限に
-達してしまうことが十分にあり得ます（要約1回分の読み上げでも内部的に複数回のAPI呼び出しが発生する）。
-上限に達すると自動的にブラウザ標準の音声合成（追加コストなし・無制限）にフォールバックしますが、
-Gemini音声を前提にした運用（安定した音質・多人数配布など）は想定していません。普段使いには
-ブラウザ音声エンジンを基本とし、Gemini音声は「試せる時に試す」程度の位置づけで利用してください。
+結果が出たあと、そのレポート・記事一覧について**マイクで声で質問し、日本語の声で答えてもらう**機能です
+（Gemini Live API）。文脈として渡すのはExaの生出力（和訳も要約もしない原文）で、モデルが必要に応じて
+参照元の本文を取得したり（`fetch_source`）、次に調べたいテーマを提案してクエリ欄に反映したり
+（`propose_next_topic`）します。
+
+- **マイクの音声はGoogleに送信されます**。課金が有効化されたGeminiプロジェクトのキーであれば
+  「Paid Services」として製品改善には使われませんが、無料枠のキーの場合は音声が製品改善に使われたり
+  人によるレビューが行われる可能性があります（下記「送信データの取り扱いについて」参照）。
+- 接続は実装上、約10分で切れることがあります。切れても保持している再開ハンドルで自動的に1回だけ
+  再接続し、それでも切れたら「再接続」ボタンが表示されます。
+- `fetch_source`で取得できる参照元の本文は、声の対話の文脈に注入する量を抑えるため、1回の呼び出しで
+  最大5件・1件あたり6,000字までです。
+- モード切替やタブを離れると、進行中の接続は自動的に終了します。
 
 ## 注意
 
 - Search modeは操作時のみ実行されます（自動更新なし）。
 - Agent modeはNDJSONで進捗をストリーミングするため、調査レベルによって数秒〜数分かかります（`maxDuration=300`）。
-- 無料枠の上限に達した場合はエラーメッセージが表示されます（TTSはブラウザ音声への自動フォールバックあり）。
+- 無料枠の上限に達した場合はエラーメッセージが表示されます。
 
 ## セキュリティに関する注意
 
@@ -209,7 +222,8 @@ Gemini音声を前提にした運用（安定した音質・多人数配布な�
 ## 送信データの取り扱いについて（Exa / Gemini）
 
 本アプリは入力した検索クエリ・調査テーマや、取得した記事・レポート本文をExaおよびGemini（Google AI Studio）
-のAPIに送信します。両社とも無料枠での利用時は送信データを自社サービスの改善・モデルの学習に使う場合がある
+のAPIに送信します。「声で質問する」機能を使う場合は、これに加えて**マイクの音声もGeminiに送信されます**。
+両社とも無料枠での利用時は送信データを自社サービスの改善・モデルの学習に使う場合がある
 ことを利用規約・プライバシーポリシーで明記しているため、公開前に把握しておくことを推奨します。
 
 - **Exa**: [プライバシーポリシー](https://exa.ai/privacy-policy)には、検索クエリ等の利用データ

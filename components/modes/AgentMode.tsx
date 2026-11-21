@@ -1,14 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { BroadcastPanel } from "@/components/BroadcastPanel";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { CostLine, EmptyHint, ErrorBanner, NoticeBanner, ScopeNote } from "@/components/Notes";
 import { ShareActions } from "@/components/ShareActions";
 import { SidebarLayout } from "@/components/SidebarLayout";
-import { useBroadcast } from "@/hooks/useBroadcast";
+import LiveQaPanel, { type LiveQaPanelHandle } from "@/components/LiveQaPanel";
 import type { GeminiUsage } from "@/lib/gemini-usage";
 import { buildResultTitle, useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { EFFORT_OPTIONS, type ResearchEffort } from "@/lib/exa-options";
@@ -22,6 +21,7 @@ type Citation = {
 
 type ResearchResult = {
   text: string;
+  rawText: string;
   citations: Citation[];
   costDollars: number | null;
   elapsedMs: number;
@@ -41,6 +41,7 @@ type ResearchStreamEvent =
   | {
       type: "result";
       text: string;
+      rawText: string;
       citations: Citation[];
       costDollars: number | null;
       summary: string;
@@ -133,12 +134,14 @@ export function AgentMode({
   password,
   onUnauthorized,
   onCost,
+  onGeminiUsage,
   query: queryInput,
   onQueryChange: setQueryInput,
 }: {
   password: string;
   onUnauthorized: () => void;
   onCost: (dollars: number, geminiUsage?: GeminiUsage | null) => void;
+  onGeminiUsage: (usage: GeminiUsage) => void;
   query: string;
   onQueryChange: (value: string) => void;
 }) {
@@ -150,21 +153,14 @@ export function AgentMode({
   const [result, setResult] = useState<ResearchResult | null>(null);
   const [queryLabel, setQueryLabel] = useState<string | null>(null);
   const [sourcesOpen, setSourcesOpen] = useState(false);
-  // Default reads only the summary; checking this reads the full report.
-  const [readFullText, setReadFullText] = useState(false);
+  const liveQaRef = useRef<LiveQaPanelHandle>(null);
 
-  const broadcast = useBroadcast({ password, resetKey: result });
   const resultEffortLabel = result
     ? (EFFORT_OPTIONS.find((opt) => opt.id === result.effort)?.label ?? result.effort)
     : null;
   useDocumentTitle(
     queryLabel && result ? buildResultTitle(queryLabel, `Exa Agent (${resultEffortLabel})`) : null,
   );
-
-  function buildSpeechText(full = readFullText) {
-    if (!result) return "";
-    return full || !result.summary ? result.text : result.summary;
-  }
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -176,6 +172,7 @@ export function AgentMode({
     setStatusMessage("調査を開始しています…");
     setResult(null);
     setSourcesOpen(false);
+    liveQaRef.current?.end();
 
     const startedAt = performance.now();
     try {
@@ -217,6 +214,7 @@ export function AgentMode({
           } else if (event.type === "result") {
             finalResult = {
               text: event.text,
+              rawText: event.rawText,
               citations: event.citations,
               costDollars: event.costDollars,
               summary: event.summary,
@@ -326,34 +324,14 @@ export function AgentMode({
           )}
 
           {result && (
-            <BroadcastPanel
-              isSpeaking={broadcast.isSpeaking}
-              isPaused={broadcast.isPaused}
-              isSynthesizing={broadcast.isSynthesizing}
-              playbackDone={broadcast.playbackDone}
-              replayFromCache={broadcast.replayFromCache}
-              ttsSupported={broadcast.ttsSupported}
-              ttsEngine={broadcast.ttsEngine}
-              ttsError={broadcast.ttsError}
-              onEngineChange={broadcast.changeEngine}
-              onToggle={() => broadcast.toggle(buildSpeechText())}
-              onStop={broadcast.stop}
-              idleLabel="レポート読み上げ"
-              playLabel="▶ レポートを読み上げる"
-              beforeControls={
-                <label className="mb-3 flex items-center gap-2 text-xs text-muted">
-                  <input
-                    type="checkbox"
-                    checked={readFullText}
-                    onChange={(e) => {
-                      if (broadcast.isSpeaking) broadcast.stop();
-                      setReadFullText(e.target.checked);
-                    }}
-                    className="h-4 w-4 rounded border-line-strong bg-card accent-red-500"
-                  />
-                  全文を読み上げる（既定では要約のみ）
-                </label>
-              }
+            <LiveQaPanel
+              ref={liveQaRef}
+              rawText={result.rawText}
+              citations={result.citations}
+              originalQuery={queryLabel ?? undefined}
+              password={password}
+              onProposeNextTopic={(queryJa) => setQueryInput(queryJa)}
+              onUsage={onGeminiUsage}
             />
           )}
 

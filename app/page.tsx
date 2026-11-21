@@ -64,7 +64,7 @@ export default function Home() {
         </div>
         <aside
           className="-mt-4 mb-6 text-right text-[11px] text-neutral-500"
-          title="このブラウザで実行した分のみの集計です（他の端末の利用分は含みません）。Geminiはトークン数のみで、読み上げ(TTS)は含みません"
+          title="このブラウザで実行した分のみの集計です（他の端末の利用分は含みません）。Geminiはトークン数のみで、声の質疑応答(Live API)の分も含みます"
         >
           {monthlyCost.month}月のExa利用額: ${monthlyCost.current.dollars.toFixed(3)}（
           {monthlyCost.current.count}回）
@@ -77,6 +77,7 @@ export default function Home() {
             password={password}
             onUnauthorized={handleUnauthorized}
             onCost={monthlyCost.addCost}
+            onGeminiUsage={monthlyCost.addGeminiUsage}
             query={query}
             onQueryChange={setQuery}
           />
@@ -85,6 +86,7 @@ export default function Home() {
             password={password}
             onUnauthorized={handleUnauthorized}
             onCost={monthlyCost.addCost}
+            onGeminiUsage={monthlyCost.addGeminiUsage}
             query={query}
             onQueryChange={setQuery}
           />

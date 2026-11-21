@@ -66,11 +66,32 @@ export function useMonthlyCost() {
     setHistory(next);
   }
 
+  // 声の質疑応答(Live API)はExaの利用ではないため、回数(count)・金額には数えず、
+  // トークン数だけを積算する。
+  function addGeminiUsage(usage: GeminiUsage) {
+    const key = monthKey();
+    const next = readHistory();
+    const entry = next[key] ?? { dollars: 0, count: 0 };
+    next[key] = {
+      ...entry,
+      geminiInputTokens: (entry.geminiInputTokens ?? 0) + usage.inputTokens,
+      geminiOutputTokens: (entry.geminiOutputTokens ?? 0) + usage.outputTokens,
+    };
+    for (const old of Object.keys(next).sort().slice(0, -MONTHS_KEPT)) delete next[old];
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      // Storage unavailable; the total still updates for this session.
+    }
+    setHistory(next);
+  }
+
   const current = monthKey();
   return {
     month: Number(current.slice(5)),
     current: history[current] ?? { dollars: 0, count: 0 },
     previous: history[previousMonthKey(current)] ?? null,
     addCost,
+    addGeminiUsage,
   };
 }

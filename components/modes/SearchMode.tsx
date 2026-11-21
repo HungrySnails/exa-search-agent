@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { BroadcastPanel } from "@/components/BroadcastPanel";
+import { useRef, useState } from "react";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { CostLine, EmptyHint, ErrorBanner, NoticeBanner, ScopeNote } from "@/components/Notes";
 import { ShareActions } from "@/components/ShareActions";
 import { SidebarLayout } from "@/components/SidebarLayout";
-import { useBroadcast } from "@/hooks/useBroadcast";
+import LiveQaPanel, { type LiveQaPanelHandle } from "@/components/LiveQaPanel";
 import type { GeminiUsage } from "@/lib/gemini-usage";
 import { buildResultTitle, useDocumentTitle } from "@/hooks/useDocumentTitle";
 import {
@@ -56,17 +55,21 @@ export function SearchMode({
   password,
   onUnauthorized,
   onCost,
+  onGeminiUsage,
   query,
   onQueryChange,
 }: {
   password: string;
   onUnauthorized: () => void;
   onCost: (dollars: number, geminiUsage?: GeminiUsage | null) => void;
+  onGeminiUsage: (usage: GeminiUsage) => void;
   query: string;
   onQueryChange: (value: string) => void;
 }) {
   const [items, setItems] = useState<NewsItem[]>([]);
   const [overview, setOverview] = useState("");
+  const [rawText, setRawText] = useState("");
+  const liveQaRef = useRef<LiveQaPanelHandle>(null);
   const [costDollars, setCostDollars] = useState<number | null>(null);
   const [elapsedMs, setElapsedMs] = useState<number | null>(null);
   const [fetchedAt, setFetchedAt] = useState<string | null>(null);
@@ -90,30 +93,13 @@ export function SearchMode({
   // caption stays true while the form is edited for the next search.
   const [run, setRun] = useState<{ mode: string; info: string } | null>(null);
   const [listOpen, setListOpen] = useState(false);
-  // When on, the reading also covers each article's summary below the overview.
-  const [readSummaries, setReadSummaries] = useState(false);
 
-  const broadcast = useBroadcast({ password, resetKey: overview });
   useDocumentTitle(searchLabel && run ? buildResultTitle(searchLabel, run.mode) : null);
 
   const selectedCategory = category || null;
   const allowsPublishedDate = categoryAllowsPublishedDate(selectedCategory);
   const allowsExcludeDomains = categoryAllowsExcludeDomains(selectedCategory);
   const typeHint = SEARCH_TYPE_OPTIONS.find((opt) => opt.id === searchType)?.hint;
-
-  function buildSpeechText(withSummaries = readSummaries) {
-    const segments = [overview];
-    if (withSummaries) {
-      for (const item of items) {
-        const summary = item.summary.trim();
-        if (!summary) continue;
-        segments.push(
-          `次に「${item.source}」からの「${item.title}」という記事の要約です。\n${summary}`
-        );
-      }
-    }
-    return segments.join("\n\n");
-  }
 
   function describeRun(itemCount: number) {
     const typeLabel = SEARCH_TYPE_OPTIONS.find((opt) => opt.id === searchType)?.label ?? searchType;
@@ -136,6 +122,7 @@ export function SearchMode({
     setLoading(true);
     setError(null);
     setNotices([]);
+    liveQaRef.current?.end();
     const startedAt = performance.now();
     try {
       const res = await fetch("/api/search", {
@@ -168,6 +155,7 @@ export function SearchMode({
       }
       setItems(data.items);
       setOverview(data.overview ?? "");
+      setRawText(data.rawText ?? "");
       setCostDollars(typeof data.costDollars === "number" ? data.costDollars : null);
       setElapsedMs(performance.now() - startedAt);
       if (typeof data.costDollars === "number") onCost(data.costDollars, data.geminiUsage ?? null);
@@ -385,42 +373,15 @@ export function SearchMode({
             </section>
           )}
 
-          {overview && (
-            <BroadcastPanel
-              isSpeaking={broadcast.isSpeaking}
-              isPaused={broadcast.isPaused}
-              isSynthesizing={broadcast.isSynthesizing}
-              playbackDone={broadcast.playbackDone}
-              replayFromCache={broadcast.replayFromCache}
-              ttsSupported={broadcast.ttsSupported}
-              ttsEngine={broadcast.ttsEngine}
-              ttsError={broadcast.ttsError}
-              onEngineChange={broadcast.changeEngine}
-              onToggle={() => broadcast.toggle(buildSpeechText())}
-              onStop={broadcast.stop}
-              idleLabel="ニュース読み上げ"
-              playLabel="▶ ニュースを読み上げる"
-              afterControls={
-                <label
-                  className={`mt-3 flex items-center gap-2 text-xs ${
-                    items.length === 0 ? "text-disabled" : "text-fg-soft"
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={readSummaries}
-                    disabled={items.length === 0}
-                    onChange={(e) => {
-                      setReadSummaries(e.target.checked);
-                      if (broadcast.playbackDone) {
-                        broadcast.refreshReplayCache(buildSpeechText(e.target.checked));
-                      }
-                    }}
-                    className="h-4 w-4 accent-red-500"
-                  />
-                  記事の要約も読み上げる（{items.length}件）
-                </label>
-              }
+          {rawText && (
+            <LiveQaPanel
+              ref={liveQaRef}
+              rawText={rawText}
+              citations={items.map((item) => ({ url: item.url, title: item.title }))}
+              originalQuery={searchLabel ?? undefined}
+              password={password}
+              onProposeNextTopic={(queryJa) => onQueryChange(queryJa)}
+              onUsage={onGeminiUsage}
             />
           )}
 
