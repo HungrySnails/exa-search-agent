@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { BroadcastPanel } from "@/components/BroadcastPanel";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { CostLine, EmptyHint, ErrorBanner, NoticeBanner, ScopeNote } from "@/components/Notes";
 import { ShareActions } from "@/components/ShareActions";
 import { SidebarLayout } from "@/components/SidebarLayout";
-import { useBroadcast } from "@/hooks/useBroadcast";
 import type { GeminiUsage } from "@/lib/gemini-usage";
 import { buildResultTitle, useDocumentTitle } from "@/hooks/useDocumentTitle";
 import {
@@ -90,30 +88,13 @@ export function SearchMode({
   // caption stays true while the form is edited for the next search.
   const [run, setRun] = useState<{ mode: string; info: string } | null>(null);
   const [listOpen, setListOpen] = useState(false);
-  // When on, the reading also covers each article's summary below the overview.
-  const [readSummaries, setReadSummaries] = useState(false);
 
-  const broadcast = useBroadcast({ password, resetKey: overview });
   useDocumentTitle(searchLabel && run ? buildResultTitle(searchLabel, run.mode) : null);
 
   const selectedCategory = category || null;
   const allowsPublishedDate = categoryAllowsPublishedDate(selectedCategory);
   const allowsExcludeDomains = categoryAllowsExcludeDomains(selectedCategory);
   const typeHint = SEARCH_TYPE_OPTIONS.find((opt) => opt.id === searchType)?.hint;
-
-  function buildSpeechText(withSummaries = readSummaries) {
-    const segments = [overview];
-    if (withSummaries) {
-      for (const item of items) {
-        const summary = item.summary.trim();
-        if (!summary) continue;
-        segments.push(
-          `次に「${item.source}」からの「${item.title}」という記事の要約です。\n${summary}`
-        );
-      }
-    }
-    return segments.join("\n\n");
-  }
 
   function describeRun(itemCount: number) {
     const typeLabel = SEARCH_TYPE_OPTIONS.find((opt) => opt.id === searchType)?.label ?? searchType;
@@ -383,45 +364,6 @@ export function SearchMode({
               <CostLine dollars={costDollars} elapsedMs={elapsedMs} />
               <ShareActions heading={searchLabel ? `「${searchLabel}」の総括` : "総括"} body={overview} />
             </section>
-          )}
-
-          {overview && (
-            <BroadcastPanel
-              isSpeaking={broadcast.isSpeaking}
-              isPaused={broadcast.isPaused}
-              isSynthesizing={broadcast.isSynthesizing}
-              playbackDone={broadcast.playbackDone}
-              replayFromCache={broadcast.replayFromCache}
-              ttsSupported={broadcast.ttsSupported}
-              ttsEngine={broadcast.ttsEngine}
-              ttsError={broadcast.ttsError}
-              onEngineChange={broadcast.changeEngine}
-              onToggle={() => broadcast.toggle(buildSpeechText())}
-              onStop={broadcast.stop}
-              idleLabel="ニュース読み上げ"
-              playLabel="▶ ニュースを読み上げる"
-              afterControls={
-                <label
-                  className={`mt-3 flex items-center gap-2 text-xs ${
-                    items.length === 0 ? "text-disabled" : "text-fg-soft"
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={readSummaries}
-                    disabled={items.length === 0}
-                    onChange={(e) => {
-                      setReadSummaries(e.target.checked);
-                      if (broadcast.playbackDone) {
-                        broadcast.refreshReplayCache(buildSpeechText(e.target.checked));
-                      }
-                    }}
-                    className="h-4 w-4 accent-red-500"
-                  />
-                  記事の要約も読み上げる（{items.length}件）
-                </label>
-              }
-            />
           )}
 
           <ScopeNote>
