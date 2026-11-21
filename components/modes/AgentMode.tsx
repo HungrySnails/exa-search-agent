@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { CostLine, EmptyHint, ErrorBanner, NoticeBanner, ScopeNote } from "@/components/Notes";
 import { ShareActions } from "@/components/ShareActions";
 import { SidebarLayout } from "@/components/SidebarLayout";
+import LiveQaPanel, { type LiveQaPanelHandle } from "@/components/LiveQaPanel";
 import type { GeminiUsage } from "@/lib/gemini-usage";
 import { buildResultTitle, useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { EFFORT_OPTIONS, type ResearchEffort } from "@/lib/exa-options";
@@ -20,6 +21,7 @@ type Citation = {
 
 type ResearchResult = {
   text: string;
+  rawText: string;
   citations: Citation[];
   costDollars: number | null;
   elapsedMs: number;
@@ -39,6 +41,7 @@ type ResearchStreamEvent =
   | {
       type: "result";
       text: string;
+      rawText: string;
       citations: Citation[];
       costDollars: number | null;
       summary: string;
@@ -131,12 +134,14 @@ export function AgentMode({
   password,
   onUnauthorized,
   onCost,
+  onGeminiUsage,
   query: queryInput,
   onQueryChange: setQueryInput,
 }: {
   password: string;
   onUnauthorized: () => void;
   onCost: (dollars: number, geminiUsage?: GeminiUsage | null) => void;
+  onGeminiUsage: (usage: GeminiUsage) => void;
   query: string;
   onQueryChange: (value: string) => void;
 }) {
@@ -148,6 +153,7 @@ export function AgentMode({
   const [result, setResult] = useState<ResearchResult | null>(null);
   const [queryLabel, setQueryLabel] = useState<string | null>(null);
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  const liveQaRef = useRef<LiveQaPanelHandle>(null);
 
   const resultEffortLabel = result
     ? (EFFORT_OPTIONS.find((opt) => opt.id === result.effort)?.label ?? result.effort)
@@ -166,6 +172,7 @@ export function AgentMode({
     setStatusMessage("調査を開始しています…");
     setResult(null);
     setSourcesOpen(false);
+    liveQaRef.current?.end();
 
     const startedAt = performance.now();
     try {
@@ -207,6 +214,7 @@ export function AgentMode({
           } else if (event.type === "result") {
             finalResult = {
               text: event.text,
+              rawText: event.rawText,
               citations: event.citations,
               costDollars: event.costDollars,
               summary: event.summary,
@@ -313,6 +321,18 @@ export function AgentMode({
                 body={result.summary}
               />
             </section>
+          )}
+
+          {result && (
+            <LiveQaPanel
+              ref={liveQaRef}
+              rawText={result.rawText}
+              citations={result.citations}
+              originalQuery={queryLabel ?? undefined}
+              password={password}
+              onProposeNextTopic={(queryJa) => setQueryInput(queryJa)}
+              onUsage={onGeminiUsage}
+            />
           )}
 
           <ScopeNote>

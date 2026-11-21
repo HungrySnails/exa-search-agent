@@ -72,6 +72,16 @@ export async function searchExa(
   };
 }
 
+// 声で質問するの文脈に渡す、未翻訳・未要約の記事一覧(Geminiへの入力と同じ形式)。
+function buildRawArticlesText(articles: ExaResult[]): string {
+  return articles
+    .map((a, i) => {
+      const body = (a.text ?? "").slice(0, MAX_CHARS_PER_ARTICLE);
+      return `[記事${i}]\nタイトル: ${a.title ?? "(不明)"}\nURL: ${a.url}\n本文:\n${body}`;
+    })
+    .join("\n\n---\n\n");
+}
+
 export async function summarizeWithGemini(
   apiKey: string,
   articles: ExaResult[],
@@ -152,6 +162,7 @@ export async function runNewsSearch(
   topic: string
 ): Promise<{
   overview: string;
+  rawText: string;
   items: NewsItem[];
   fetchedAt: string;
   costDollars: number | null;
@@ -184,5 +195,12 @@ export async function runNewsSearch(
     summary: summaries[i] || "(要約を取得できませんでした)",
   }));
 
-  return { overview, items, fetchedAt: new Date().toISOString(), costDollars, notices };
+  return {
+    overview,
+    rawText: buildRawArticlesText(results),
+    items,
+    fetchedAt: new Date().toISOString(),
+    costDollars,
+    notices,
+  };
 }

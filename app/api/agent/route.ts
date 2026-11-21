@@ -30,6 +30,8 @@ type StreamEvent =
   | {
       type: "result";
       text: string;
+      /** Exa's untranslated output, for声で質問する's context (no translation/summarization). */
+      rawText: string;
       citations: { url: string; title: string | null }[];
       costDollars: number | null;
       /** Empty when summarization failed; see notices. */
@@ -149,6 +151,7 @@ export async function POST(req: NextRequest) {
         send({
           type: "result",
           text,
+          rawText: result.text,
           citations,
           costDollars: result.costDollars,
           summary,

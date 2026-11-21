@@ -8,6 +8,7 @@ import { useRef, useState } from "react";
 import { MicCapture } from "@/lib/audio/capture";
 import { PcmPlayer } from "@/lib/audio/player";
 import { useWakeLock } from "@/lib/use-wake-lock";
+import type { GeminiUsage } from "@/lib/gemini-usage";
 
 export type ConnectionState = "idle" | "connecting" | "connected" | "closed" | "error";
 
@@ -77,6 +78,8 @@ export function useLiveSession(options: LiveSessionOptions) {
   // マイクが実際に音を拾えているかを目で確認するための、保存しない一時的な音量表示。
   const [micLevel, setMicLevel] = useState(0);
   const [transcriptCollapsed, setTranscriptCollapsed] = useState(true);
+  // サーバーメッセージに載るusageMetadataの積算(届かないサーバーバージョンもあるため0のままもあり得る)。
+  const [usage, setUsage] = useState<GeminiUsage>({ inputTokens: 0, outputTokens: 0 });
 
   const wsRef = useRef<WebSocket | null>(null);
   const micRef = useRef<MicCapture | null>(null);
@@ -275,6 +278,21 @@ export function useLiveSession(options: LiveSessionOptions) {
       void handleToolCalls(toolCall.functionCalls);
     }
 
+    // generateContentのusageMetadataと同じ項目名(promptTokenCount等)。届くタイミング・
+    // 届くかどうかはAPIバージョン依存のため、無ければ0のまま進める。累積か差分かが
+    // 未確認なため、安全側(過大表示より過小表示)に倒し、届いた値で上書きする(加算しない)。
+    const usageMetadata = msg.usageMetadata as
+      | { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number }
+      | undefined;
+    if (usageMetadata) {
+      const count = (v: unknown) => (typeof v === "number" && v > 0 ? v : 0);
+      setUsage({
+        inputTokens: count(usageMetadata.promptTokenCount),
+        outputTokens:
+          count(usageMetadata.candidatesTokenCount) + count(usageMetadata.thoughtsTokenCount),
+      });
+    }
+
     if (msg.error) {
       setErrorMessage(`サーバーエラー: ${JSON.stringify(msg.error)}`);
     }
@@ -438,6 +456,7 @@ export function useLiveSession(options: LiveSessionOptions) {
     micLevel,
     transcriptCollapsed,
     setTranscriptCollapsed,
+    usage,
     start,
     end,
     endAfterPlayback,

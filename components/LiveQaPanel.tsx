@@ -5,7 +5,7 @@
 // (ラボのRecorderのような計測機構は、この組み込みでは作らない)。
 // 接続・マイク・再生・再接続は共通フック(lib/use-live-session.ts)が受け持つ。
 
-import { forwardRef, useImperativeHandle, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { MicLevelMeter } from "@/components/live/MicLevelMeter";
 import { SessionControls } from "@/components/live/SessionControls";
 import { TranscriptList } from "@/components/live/TranscriptList";
@@ -16,6 +16,7 @@ import {
   type FunctionCall,
   type FunctionResponse,
 } from "@/lib/use-live-session";
+import type { GeminiUsage } from "@/lib/gemini-usage";
 
 interface LiveCitation {
   url: string;
@@ -52,16 +53,18 @@ function LiveQaPanel(
     password,
     onBeforeStart,
     onProposeNextTopic,
+    onUsage,
   }: {
     rawText: string;
     citations: LiveCitation[];
-    // 前段(ThemeTalkPanel)で確定した元のテーマ、または手動入力時のクエリ(任意)。
+    // Agent/Search modeで確定した元のテーマ、または手動入力時のクエリ(任意)。
     originalQuery?: string;
     password: string;
-    // 接続開始の直前に呼ぶ。もう一方(ThemeTalkPanel)が接続中なら、ここで終了させる
-    // (両方同時にLive接続が立ち、両方が音声に反応する不整合を防ぐ)。
+    // 接続開始の直前に呼ぶ(モード切替などで多重接続を避けたい場合に使う)。
     onBeforeStart?: () => void;
     onProposeNextTopic: (queryJa: string, queryEn: string) => void;
+    // 終了時に、その接続で積算されたGeminiのトークン数を報告する(届いていれば)。
+    onUsage?: (usage: GeminiUsage) => void;
   },
   ref: React.ForwardedRef<LiveQaPanelHandle>
 ) {
@@ -99,9 +102,25 @@ function LiveQaPanel(
     micLevel,
     transcriptCollapsed,
     setTranscriptCollapsed,
+    usage,
   } = live;
 
   useImperativeHandle(ref, () => ({ end: handleEnd }));
+
+  // アンマウント時・終了時にその時点のusage・onUsage・end()を読めるよう、
+  // 毎回のレンダーでrefに入れ直す(クロージャの古い値を掴まないようにする)。
+  const latestRef = useRef({ end: live.end, usage, onUsage });
+  latestRef.current = { end: live.end, usage, onUsage };
+
+  // SearchMode/AgentModeはタブ切替で丸ごとアンマウントされるため、接続中にタブを
+  // 切り替えても放置されないよう、アンマウント時にも終了させる。
+  useEffect(() => {
+    return () => {
+      const { end, usage: u, onUsage: report } = latestRef.current;
+      if (u.inputTokens + u.outputTokens > 0) report?.(u);
+      end();
+    };
+  }, []);
 
   // モデルがfetch_sourceを呼んできたら、/api/fetch-source(Exaの/contents)で
   // 本文を(複数URLをまとめて)取って送り返す。取得中はマイク送信を止め、パネルに表示する。
@@ -199,6 +218,7 @@ function LiveQaPanel(
   }
 
   function handleEnd() {
+    if (usage.inputTokens + usage.outputTokens > 0) onUsage?.(usage);
     live.end();
     setFetchingSource(false);
   }

@@ -77,6 +77,7 @@ export default function Home() {
             password={password}
             onUnauthorized={handleUnauthorized}
             onCost={monthlyCost.addCost}
+            onGeminiUsage={monthlyCost.addGeminiUsage}
             query={query}
             onQueryChange={setQuery}
           />
@@ -85,6 +86,7 @@ export default function Home() {
             password={password}
             onUnauthorized={handleUnauthorized}
             onCost={monthlyCost.addCost}
+            onGeminiUsage={monthlyCost.addGeminiUsage}
             query={query}
             onQueryChange={setQuery}
           />

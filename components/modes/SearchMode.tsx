@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { CostLine, EmptyHint, ErrorBanner, NoticeBanner, ScopeNote } from "@/components/Notes";
 import { ShareActions } from "@/components/ShareActions";
 import { SidebarLayout } from "@/components/SidebarLayout";
+import LiveQaPanel, { type LiveQaPanelHandle } from "@/components/LiveQaPanel";
 import type { GeminiUsage } from "@/lib/gemini-usage";
 import { buildResultTitle, useDocumentTitle } from "@/hooks/useDocumentTitle";
 import {
@@ -54,17 +55,21 @@ export function SearchMode({
   password,
   onUnauthorized,
   onCost,
+  onGeminiUsage,
   query,
   onQueryChange,
 }: {
   password: string;
   onUnauthorized: () => void;
   onCost: (dollars: number, geminiUsage?: GeminiUsage | null) => void;
+  onGeminiUsage: (usage: GeminiUsage) => void;
   query: string;
   onQueryChange: (value: string) => void;
 }) {
   const [items, setItems] = useState<NewsItem[]>([]);
   const [overview, setOverview] = useState("");
+  const [rawText, setRawText] = useState("");
+  const liveQaRef = useRef<LiveQaPanelHandle>(null);
   const [costDollars, setCostDollars] = useState<number | null>(null);
   const [elapsedMs, setElapsedMs] = useState<number | null>(null);
   const [fetchedAt, setFetchedAt] = useState<string | null>(null);
@@ -117,6 +122,7 @@ export function SearchMode({
     setLoading(true);
     setError(null);
     setNotices([]);
+    liveQaRef.current?.end();
     const startedAt = performance.now();
     try {
       const res = await fetch("/api/search", {
@@ -149,6 +155,7 @@ export function SearchMode({
       }
       setItems(data.items);
       setOverview(data.overview ?? "");
+      setRawText(data.rawText ?? "");
       setCostDollars(typeof data.costDollars === "number" ? data.costDollars : null);
       setElapsedMs(performance.now() - startedAt);
       if (typeof data.costDollars === "number") onCost(data.costDollars, data.geminiUsage ?? null);
@@ -364,6 +371,18 @@ export function SearchMode({
               <CostLine dollars={costDollars} elapsedMs={elapsedMs} />
               <ShareActions heading={searchLabel ? `「${searchLabel}」の総括` : "総括"} body={overview} />
             </section>
+          )}
+
+          {rawText && (
+            <LiveQaPanel
+              ref={liveQaRef}
+              rawText={rawText}
+              citations={items.map((item) => ({ url: item.url, title: item.title }))}
+              originalQuery={searchLabel ?? undefined}
+              password={password}
+              onProposeNextTopic={(queryJa) => onQueryChange(queryJa)}
+              onUsage={onGeminiUsage}
+            />
           )}
 
           <ScopeNote>
